@@ -2,7 +2,7 @@ import json
 import os
 from typing import Optional
 
-from fastapi import Depends, Query, HTTPException, APIRouter, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 
 from models import Platform
 from utils import PaginationParams, extract_feature, paginate
@@ -11,7 +11,9 @@ features_router = APIRouter(prefix="/feature", tags=["Features"])
 
 
 @features_router.get(
-    "/platforms", summary="Get platforms", description="Retrieve a list of platforms"
+    "/platforms",
+    summary="Get platforms",
+    description="Retrieve a list of platforms",
 )
 @paginate
 def features_platforms(
@@ -33,7 +35,9 @@ def features_platforms(
 
 
 @features_router.get(
-    "/releases", summary="Get releases", description="Retrieve a list of releases"
+    "/releases",
+    summary="Get releases",
+    description="Retrieve a list of releases",
 )
 @paginate
 def get_releases(
@@ -68,7 +72,9 @@ def get_features(
     file_name = f"{platform_id}_{release_id}.json"
 
     if not os.path.exists(tar_path):
-        raise HTTPException(status_code=404, detail="Feature archive not found.")
+        raise HTTPException(
+            status_code=404, detail="Feature archive not found."
+        )
 
     features = extract_feature(tar_path, file_name)
     return features

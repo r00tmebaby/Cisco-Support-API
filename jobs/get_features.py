@@ -5,12 +5,14 @@ import os
 import tarfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
 import aiofiles
 import httpx
 from pydantic import BaseModel
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
 # Suppress httpx logs by setting their logging level to WARNING
@@ -24,7 +26,9 @@ class Config:
     FETCH_FEATURES_ONLINE = True
     CONCURRENT_REQUESTS_LIMIT = 5
     REQUEST_DELAY = 1
-    FEATURES_DIR: Path = Path(os.path.join(os.getcwd(), "data", "product_features"))
+    FEATURES_DIR: Path = Path(
+        os.path.join(os.getcwd(), "data", "product_features")
+    )
     FEATURES_DIR.mkdir(exist_ok=True, parents=True)
     TYPES = [
         "Switches",
@@ -91,7 +95,10 @@ class GetFeaturesJob:
         return {}
 
     async def _fetch_releases(
-        self, client: httpx.AsyncClient, each_platform: Dict[str, Any], each_type: str
+        self,
+        client: httpx.AsyncClient,
+        each_platform: Dict[str, Any],
+        each_type: str,
     ) -> List[Dict[str, Any]]:
         """
         Fetch releases for the given platform.
@@ -102,7 +109,9 @@ class GetFeaturesJob:
         """
         platform_id = each_platform.get("platform_id")
         self.logger.info(f"Fetching releases for {platform_id}")
-        request = RequestModel(platform_id=platform_id, mdf_product_type=each_type)
+        request = RequestModel(
+            platform_id=platform_id, mdf_product_type=each_type
+        )
         response = await client.post(
             self.config.REQUEST_2,
             headers=self.config.HEADERS,
@@ -157,9 +166,7 @@ class GetFeaturesJob:
                 feature["platform_id"] = each_release["platform_id"]
                 feature["release_id"] = each_release["release_id"]
 
-            file_name = (
-                f"{each_release['platform_id']}_{each_release['release_id']}.json"
-            )
+            file_name = f"{each_release['platform_id']}_{each_release['release_id']}.json"
             file_path = self.config.FEATURES_DIR / file_name
 
             async with aiofiles.open(file_path, "w") as file:
@@ -172,7 +179,9 @@ class GetFeaturesJob:
                 f"Failed to fetch features for platform {each_release['platform_id']} and release {each_release['release_id']}, status code: {response.status_code}"
             )
 
-    async def _read_file(self, filename: str) -> Dict[str, List[Dict[str, Any]]]:
+    async def _read_file(
+        self, filename: str
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """
         Read data from a local JSON file.
         :param filename: The name of the file to read.
@@ -194,7 +203,9 @@ class GetFeaturesJob:
         :param tar: The tar file to add the features data.
         """
         async with httpx.AsyncClient(timeout=900) as client:
-            semaphore = asyncio.Semaphore(self.config.CONCURRENT_REQUESTS_LIMIT)
+            semaphore = asyncio.Semaphore(
+                self.config.CONCURRENT_REQUESTS_LIMIT
+            )
 
             async def fetch_features_with_semaphore(
                 each_release: Dict[str, Any], mdf_product_type: str
@@ -208,7 +219,9 @@ class GetFeaturesJob:
             for mdf_product_type, releases_list in releases.items():
                 for each_release in releases_list:
                     feature_tasks.append(
-                        fetch_features_with_semaphore(each_release, mdf_product_type)
+                        fetch_features_with_semaphore(
+                            each_release, mdf_product_type
+                        )
                     )
             await asyncio.gather(*feature_tasks)
             self.logger.info("Fetched all features data")
@@ -231,7 +244,9 @@ class GetFeaturesJob:
             return await self._fetch_online_platforms()
         return await self._read_file("platforms")
 
-    async def _fetch_releases_data(self, platforms: Dict[str, Any]) -> Dict[str, Any]:
+    async def _fetch_releases_data(
+        self, platforms: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Fetch or read releases data.
         :param platforms: A dictionary containing platforms data.
@@ -263,11 +278,15 @@ class GetFeaturesJob:
             platforms_results = await asyncio.gather(*platform_tasks)
             platforms = {
                 each_type: data
-                for each_type, data in zip(self.config.TYPES, platforms_results)
+                for each_type, data in zip(
+                    self.config.TYPES, platforms_results
+                )
             }
         return platforms
 
-    async def _fetch_online_releases(self, platforms: Dict[str, Any]) -> Dict[str, Any]:
+    async def _fetch_online_releases(
+        self, platforms: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Fetch releases data from the online API for the given platforms.
         :param platforms: A dictionary containing platforms data.
@@ -283,7 +302,9 @@ class GetFeaturesJob:
                 ]
                 releases_results = await asyncio.gather(*release_tasks)
                 releases[each_type] = [
-                    release for sublist in releases_results for release in sublist
+                    release
+                    for sublist in releases_results
+                    for release in sublist
                 ]
                 self.logger.info(
                     f"Retrieved {len(releases[each_type])} releases for {each_type}"
