@@ -28,9 +28,7 @@ section = driver.find_element(
     By.XPATH, '//div[@data-config-metrics-title="Products by Category"]'
 )
 links = section.find_elements(By.TAG_NAME, "a")
-product_list = [
-    {"product": i.text, "url": i.get_attribute("href")} for i in links
-]
+product_list = [{"product": i.text, "url": i.get_attribute("href")} for i in links]
 # Initialize a dictionary to hold the products by category
 products_by_category = {}
 

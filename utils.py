@@ -13,9 +13,7 @@ from starlette.responses import JSONResponse
 class PaginationParams:
     def __init__(
         self,
-        page: int = Query(
-            1, ge=1, description="The page number for pagination"
-        ),
+        page: int = Query(1, ge=1, description="The page number for pagination"),
         limit: int = Query(
             20,
             ge=1,
@@ -33,9 +31,7 @@ class PaginationParams:
 
 def paginate(func: Callable[..., Union[List[Dict[str, Any]], Dict[str, Any]]]):
     @wraps(func)
-    async def async_wrapper(
-        *args, pagination: PaginationParams = Depends(), **kwargs
-    ):
+    async def async_wrapper(*args, pagination: PaginationParams = Depends(), **kwargs):
         limit = pagination.limit
         offset = pagination.offset
 
@@ -48,13 +44,9 @@ def paginate(func: Callable[..., Union[List[Dict[str, Any]], Dict[str, Any]]]):
             total_items = len(results)
             paginated_results = results[offset : offset + limit]
         else:
-            raise HTTPException(
-                status_code=500, detail="Results should be a list."
-            )
+            raise HTTPException(status_code=500, detail="Results should be a list.")
 
-        total_pages = (
-            total_items + limit - 1
-        ) // limit  # Calculate total pages
+        total_pages = (total_items + limit - 1) // limit  # Calculate total pages
         current_page = pagination.page
         has_more = offset + limit < total_items
 

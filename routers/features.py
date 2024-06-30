@@ -72,9 +72,7 @@ def get_features(
     file_name = f"{platform_id}_{release_id}.json"
 
     if not os.path.exists(tar_path):
-        raise HTTPException(
-            status_code=404, detail="Feature archive not found."
-        )
+        raise HTTPException(status_code=404, detail="Feature archive not found.")
 
     features = extract_feature(tar_path, file_name)
     return features
