@@ -34,13 +34,13 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
-    - name: Archive dependencies
-      run: tar -czf dependencies.tar.gz .venv
-    - name: Upload dependencies
+    - name: Archive project directory
+      run: tar -czf project-with-dependencies.tar.gz --exclude='.git' --exclude='project-with-dependencies.tar.gz' .
+    - name: Upload project directory
       uses: actions/upload-artifact@v3
       with:
-        name: dependencies
-        path: dependencies.tar.gz
+        name: project-with-dependencies
+        path: project-with-dependencies.tar.gz
 
   lint:
     runs-on: ubuntu-latest
@@ -52,13 +52,13 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: "3.9"
-    - name: Download dependencies
+    - name: Download project directory
       uses: actions/download-artifact@v3
       with:
-        name: dependencies
+        name: project-with-dependencies
         path: .
-    - name: Extract dependencies
-      run: tar -xzf dependencies.tar.gz
+    - name: Extract project directory
+      run: tar -xzf project-with-dependencies.tar.gz
     - name: Check code compliance with black and isort
       run: |
         black --check . 
@@ -74,13 +74,13 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: "3.9"
-    - name: Download dependencies
+    - name: Download project directory
       uses: actions/download-artifact@v3
       with:
-        name: dependencies
+        name: project-with-dependencies
         path: .
-    - name: Extract dependencies
-      run: tar -xzf dependencies.tar.gz
+    - name: Extract project directory
+      run: tar -xzf project-with-dependencies.tar.gz
     - name: Test with pytest
       run: pytest
 
@@ -89,12 +89,12 @@ jobs:
     needs: tests
 
     steps:
-    - name: Download dependencies
+    - name: Download project directory
       uses: actions/download-artifact@v3
       with:
-        name: dependencies
+        name: project-with-dependencies
         path: .
-    - name: Extract dependencies
-      run: tar -xzf dependencies.tar.gz
+    - name: Extract project directory
+      run: tar -xzf project-with-dependencies.tar.gz
     - name: Deploy application
       run: echo "Deploying your application..."
