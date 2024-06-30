@@ -50,11 +50,6 @@ jobs:
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install black isort
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Check code compliance with black and isort
       run: |
         black --check . 
@@ -75,11 +70,6 @@ jobs:
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Test with pytest
       run: |
         pytest
