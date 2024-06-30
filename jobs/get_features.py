@@ -84,7 +84,7 @@ class GetFeaturesJob:
         response = await client.post(
             self.config.REQUEST_1,
             headers=self.config.HEADERS,
-            json=request.dict(),
+            json=request.model_dump(),
             timeout=900,
         )
         await asyncio.sleep(1)
@@ -111,7 +111,7 @@ class GetFeaturesJob:
         response = await client.post(
             self.config.REQUEST_2,
             headers=self.config.HEADERS,
-            json=request.dict(),
+            json=request.model_dump(),
             timeout=900,
         )
         await asyncio.sleep(10)
@@ -150,7 +150,7 @@ class GetFeaturesJob:
         response = await client.post(
             self.config.REQUEST_3,
             headers=self.config.HEADERS,
-            json=request.dict(),
+            json=request.model_dump(),
             timeout=900,
         )
         await asyncio.sleep(self.config.REQUEST_DELAY)
