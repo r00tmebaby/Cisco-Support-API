@@ -1,29 +1,19 @@
 import asyncio
 import json
-import logging
 import os
 import tarfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
+from config import logging
 import aiofiles
 import httpx
 from pydantic import BaseModel
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-
-# Suppress httpx logs by setting their logging level to WARNING
-httpx_logger = logging.getLogger("httpx")
-httpx_logger.setLevel(logging.WARNING)
 
 
 class Config:
     FETCH_PLATFORMS_ONLINE = False
     FETCH_RELEASES_ONLINE = False
-    FETCH_FEATURES_ONLINE = True
+    FETCH_FEATURES_ONLINE = False
     CONCURRENT_REQUESTS_LIMIT = 5
     REQUEST_DELAY = 1
     FEATURES_DIR: Path = Path(os.path.join(os.getcwd(), "data", "product_features"))
@@ -137,7 +127,7 @@ class GetFeaturesJob:
         :param client: The HTTP client to use for the request.
         :param each_release: The release data to fetch features for.
         :param mdf_product_type: The type of product.
-        :param tar: The tar file to add the features data.
+        :param tar: The tar file to add the features' data.
         """
         self.logger.info(
             f"Fetching features for platform {each_release['platform_id']} and release {each_release['release_id']}"
@@ -196,7 +186,7 @@ class GetFeaturesJob:
         """
         Fetch all features for the given releases and save them directly to the tar file.
         :param releases: The release data to fetch features for.
-        :param tar: The tar file to add the features data.
+        :param tar: The tar file to add the features' data.
         """
         async with httpx.AsyncClient(timeout=900) as client:
             semaphore = asyncio.Semaphore(self.config.CONCURRENT_REQUESTS_LIMIT)

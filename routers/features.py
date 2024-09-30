@@ -1,15 +1,17 @@
 import json
 import os
+import tarfile
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query
-
+from fastapi import APIRouter, Depends, HTTPException, Query
+from multipart.multipart import Field
+from config import logging
 from models import Platform
 from utils import PaginationParams, extract_feature, paginate
 
 features_router = APIRouter(prefix="/feature", tags=["Features"])
 
-
+logger = logging.getLogger("features")
 @features_router.get(
     "/platforms",
     summary="Get platforms",
@@ -64,8 +66,8 @@ def get_releases(
 )
 @paginate
 def get_features(
-    platform_id: int = Path(..., description="ID of the platform"),
-    release_id: int = Path(..., description="ID of the release"),
+    platform_id: int,
+    release_id: int,
     pagination: PaginationParams = Depends(),
 ):
     tar_path = "data/product_features/features.tar.gz"
@@ -74,5 +76,17 @@ def get_features(
     if not os.path.exists(tar_path):
         raise HTTPException(status_code=404, detail="Feature archive not found.")
 
-    features = extract_feature(tar_path, file_name)
+    try:
+        features = extract_feature(tar_path, file_name)
+    except tarfile.ReadError:
+        # The tar file is not readable, possibly because it is still being written
+        raise HTTPException(
+            status_code=503,
+            detail="Feature archive is currently being updated. Please try again later.",
+        )
+    except Exception as e:
+        # Log the exception and return a generic server error
+        logger.exception(f"Error extracting features: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error.")
+
     return features

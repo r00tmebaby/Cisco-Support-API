@@ -14,9 +14,9 @@ from routers.features import features_router
 async def lifespan(app: FastAPI):
     fetcher = GetFeaturesJob()
     thread = threading.Thread(target=asyncio.run, args=(fetcher.fetch_data(),))
-    # thread.start()
+    thread.start()
     yield
-    # thread.join()
+    thread.join()
 
 
 app = FastAPI(
