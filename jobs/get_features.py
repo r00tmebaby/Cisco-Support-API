@@ -13,8 +13,8 @@ from config import logging
 
 
 class Config:
-    FETCH_PLATFORMS_ONLINE = False
-    FETCH_RELEASES_ONLINE = False
+    FETCH_PLATFORMS_ONLINE = True
+    FETCH_RELEASES_ONLINE = True
     FETCH_FEATURES_ONLINE = False
     CONCURRENT_REQUESTS_LIMIT = 5
     REQUEST_DELAY = 1

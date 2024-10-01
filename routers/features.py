@@ -24,9 +24,13 @@ logger = logging.getLogger("features")
 def features_platforms(
     platform: Platform = Depends(), pagination: PaginationParams = Depends()
 ):
-    with open("data/product_features/platforms.json") as f:
-        results = json.loads(f.read())
-
+    try:
+        with open("data/product_features/platforms.json") as f:
+            results = json.loads(f.read())
+    except FileNotFoundError:
+        logger.warning(
+            f"Platform data not found, please run Get Features job to create one"
+        )
     if platform.by_name:
         search_results = [
             platform_data

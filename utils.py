@@ -1,5 +1,6 @@
 import inspect
 import json
+import logging
 import os
 import re
 import tarfile
@@ -9,8 +10,9 @@ from typing import Any, Callable, Dict, List, Union
 
 from fastapi import Depends, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
-from fastapi.logger import logger
 from starlette.responses import JSONResponse
+
+logger = logging.getLogger("Utils")
 
 
 class PaginationParams:
