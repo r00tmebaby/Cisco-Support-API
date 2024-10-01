@@ -1,7 +1,8 @@
-import unittest
-from unittest.mock import patch, mock_open
 import os
-from utils import save_to_json, normalize_to_camel_case, normalize_date_format
+import unittest
+from unittest.mock import mock_open, patch
+
+from utils import normalize_date_format, normalize_to_camel_case, save_to_json
 
 
 class TestUtilsFunctions(unittest.TestCase):
@@ -38,5 +39,5 @@ class TestUtilsFunctions(unittest.TestCase):
         self.assertEqual(result, "invalid date")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
