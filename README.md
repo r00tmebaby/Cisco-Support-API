@@ -1,5 +1,5 @@
 
-# Cisco Business Critical Services (BCS) - Open Data Alternative
+# Cisco Support - Open Data Alternative
 
 Business Critical Services (BCS) traditionally provides customers with network Operational Insights (OI) through Network Consulting Engineers (NCE) or via a customer portal. While this is valuable, customers have expressed the need for a more flexible consumption model—one that integrates seamlessly into their existing workflows.
 
@@ -30,4 +30,6 @@ Moreover, this would encourage potential new customers to buy Cisco devices afte
  
 
 ### No Reinventing the Wheel – Simply Scraping Available Data
-It's important to note that I am not reinventing the wheel or stealing proprietary information. I am simply scraping what already exists on Cisco's publicly available website. This allows us to create a cold-data dataset that can be freely served, making the same information accessible in a more automated and efficient way.
+It's important to note that I am not reinventing the wheel or stealing proprietary information. I am simply collecting what already exists on Cisco's publicly available website. This allows us to create a cold-data dataset that can be freely served, making the same information accessible in a more automated and efficient way.
+The tools on their own are not against the Cisco's policy but their improper usage maybe so you make sure all you do complies with Cisco's TOS: https://www.cisco.com/c/en/us/about/legal/terms-conditions.html
+The repo does not contain Cisco's data only tools that can obtain it.

@@ -5,7 +5,9 @@ import json
 import logging
 import os
 import re
+import shutil
 import sys
+import tarfile
 from datetime import datetime
 from pathlib import Path
 from threading import Semaphore
@@ -28,8 +30,15 @@ CONCURRENT_REQUESTS = 10
 TIMEOUT_THREAD = 1
 TIMEOUT_REQUESTS = 1
 
+
+
 BASE_FOLDER = os.path.join(PROJECT_ROOT, "data")
 EOL_FOLDER = os.path.join(BASE_FOLDER, "eol-eos")
+
+# Archiving
+COMPRESSION_LEVEL = 9
+ARCHIVE_FILE =  "eol_data.tar.gz"
+
 CATEGORIES_JSON_PATH = os.path.join(BASE_FOLDER, "products_by_category.json")
 
 
@@ -73,7 +82,7 @@ class CiscoEOLParser:
             format="%(asctime)s - %(levelname)s - %(message)s",
             handlers=[logging.StreamHandler()],
         )
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(__name__).getChild("EOLParser")
 
     @classmethod
     async def _process_eol_page(
@@ -546,8 +555,9 @@ class CiscoEOLParser:
 
 
 async def main() -> None:
-    """Main function to run the Cisco EOL/EOS/FN parser."""
+    """Main function to run the Cisco EOL/EOS/FN parser and create a tar.gz archive after processing."""
     parser = CiscoEOLParser()
+
     async with httpx.AsyncClient(
         headers={"User-Agent": "Mozilla/5.0"}, follow_redirects=True
     ) as client:
@@ -555,6 +565,7 @@ async def main() -> None:
         tasks = []
         with open(CATEGORIES_JSON_PATH) as file:
             products_by_category = json.load(file)
+
         for device_category in products_by_category.keys():
             for product in products_by_category.get(device_category):
                 product_family, product_url = product.values()
@@ -563,8 +574,24 @@ async def main() -> None:
                 tasks.append(
                     parser.support_page_parser(product_url, client, path, semaphore)
                 )
+
+        # Wait for all the tasks to complete
         await asyncio.gather(*tasks)
 
+    # Create tar.gz archive of the EOL_FOLDER
+    tar_filename = os.path.join(BASE_FOLDER, ARCHIVE_FILE)
 
+    with tarfile.open(tar_filename, "w:gz", compresslevel=COMPRESSION_LEVEL) as tar:
+        tar.add(EOL_FOLDER, arcname=os.path.basename(EOL_FOLDER))
+
+    logging.info(f"Data archived to {tar_filename}")
+    try:
+        # Delete the EOL_FOLDER and its contents after archiving
+        shutil.rmtree(EOL_FOLDER)
+        logging.info(f"Deleted the folder: {EOL_FOLDER}")
+        logging.info("Job has finished successfully!")
+    except (FileNotFoundError, IOError):
+        logging.error(f"Folder {EOL_FOLDER} could not be deleted")
+        logging.warning("Job has not finished successfully!")
 if __name__ == "__main__":
     asyncio.run(main())
