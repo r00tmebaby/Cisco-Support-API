@@ -6,18 +6,17 @@ from urllib.parse import urljoin
 import httpx
 from bs4 import BeautifulSoup
 
-from config import logging
+from config import Config, logging
 
-# Base URLs
-BASE_URL = "https://www.cisco.com/c/en/us/support/"
-SEMAPHORE_LIMIT = 10  # To limit the number of concurrent requests
 logger = logging.Logger("GetCiscoProductsJob")
-semaphore = Semaphore(SEMAPHORE_LIMIT)
+
+SEMAPHORE = Semaphore(Config.DEFAULT_SEMAPHORE)
+BASE_URL = Config.CISCO_SUPPORT_URL
 
 
 async def get_page_soup(client, url):
     """Fetches and parses HTML content from a URL using BeautifulSoup asynchronously."""
-    async with semaphore:
+    async with SEMAPHORE:
         response = await client.get(url)
         if response.status_code == 200:
             return BeautifulSoup(response.content, "html.parser")

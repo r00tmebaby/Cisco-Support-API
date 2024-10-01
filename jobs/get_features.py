@@ -2,43 +2,13 @@ import asyncio
 import json
 import os
 import tarfile
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import aiofiles
 import httpx
-from pydantic import BaseModel
 
-from config import logging
-
-
-class Config:
-    FETCH_PLATFORMS_ONLINE = True
-    FETCH_RELEASES_ONLINE = True
-    FETCH_FEATURES_ONLINE = False
-    CONCURRENT_REQUESTS_LIMIT = 5
-    REQUEST_DELAY = 1
-    FEATURES_DIR: Path = Path(os.path.join(os.getcwd(), "data", "product_features"))
-    FEATURES_DIR.mkdir(exist_ok=True, parents=True)
-    TYPES = [
-        "Switches",
-        "Routers",
-        "Wireless",
-        "IOT Routers",
-        "IOT Switches",
-        "IOT Wireless",
-    ]
-    HEADERS = {}
-    REQUEST_1 = "https://cfnngws.cisco.com/api/v1/platform"
-    REQUEST_2 = "https://cfnngws.cisco.com/api/v1/release"
-    REQUEST_3 = "https://cfnngws.cisco.com/api/v1/by_product_result"
-
-
-class RequestModel(BaseModel):
-    platform_id: Optional[int] = None
-    mdf_product_type: Optional[str] = None
-    release_id: Optional[int] = None
-    feature_set_id: Optional[int] = None
+from config import GetFeaturesConfig, logging
+from models import FeaturesRequestModel
 
 
 class GetFeaturesJob:
@@ -59,7 +29,7 @@ class GetFeaturesJob:
     """
 
     def __init__(self):
-        self.config = Config()
+        self.config = GetFeaturesConfig()
         self.logger = logging.getLogger("GetFeaturesJob")
 
     async def _fetch_platforms(
@@ -72,7 +42,7 @@ class GetFeaturesJob:
         :return: A dictionary of platform data.
         """
         self.logger.info(f"Fetching platforms for {each_type}")
-        request = RequestModel(mdf_product_type=each_type)
+        request = FeaturesRequestModel(mdf_product_type=each_type)
         response = await client.post(
             self.config.REQUEST_1,
             headers=self.config.HEADERS,
@@ -99,7 +69,9 @@ class GetFeaturesJob:
         """
         platform_id = each_platform.get("platform_id")
         self.logger.info(f"Fetching releases for {platform_id}")
-        request = RequestModel(platform_id=platform_id, mdf_product_type=each_type)
+        request = FeaturesRequestModel(
+            platform_id=platform_id, mdf_product_type=each_type
+        )
         response = await client.post(
             self.config.REQUEST_2,
             headers=self.config.HEADERS,
@@ -134,7 +106,7 @@ class GetFeaturesJob:
         self.logger.info(
             f"Fetching features for platform {each_release['platform_id']} and release {each_release['release_id']}"
         )
-        request = RequestModel(
+        request = FeaturesRequestModel(
             platform_id=each_release["platform_id"],
             mdf_product_type=mdf_product_type,
             release_id=each_release["release_id"],
@@ -166,7 +138,10 @@ class GetFeaturesJob:
             os.remove(file_path)
         else:
             self.logger.error(
-                f"Failed to fetch features for platform {each_release['platform_id']} and release {each_release['release_id']}, status code: {response.status_code}"
+                f"Failed to fetch features for platform "
+                f"{each_release['platform_id']} and release "
+                f"{each_release['release_id']}, status code: "
+                f"{response.status_code}"
             )
 
     async def _read_file(self, filename: str) -> Dict[str, List[Dict[str, Any]]]:

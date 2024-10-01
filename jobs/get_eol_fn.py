@@ -16,31 +16,9 @@ from urllib.parse import urljoin
 import httpx
 from bs4 import BeautifulSoup
 
-from config import logging
+from config import GetEOLConfig, logging
 from jobs.get_cisco_products import scrape_cisco_products
 from utils import normalize_date_format, normalize_to_camel_case, save_to_json
-
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# Get the project root directory
-PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
-
-FIELD_NOTICES_LINK = "products-field-notices-list.html"
-EOS_EOS_NOTICES_LINK = "eos-eol-notice-listing.html"
-CISCO_SUPPORT_URL = "https://www.cisco.com/c/en/us/support/index.html"
-
-CONCURRENT_REQUESTS = 10
-TIMEOUT_THREAD = 1
-TIMEOUT_REQUESTS = 1
-
-BASE_FOLDER = os.path.join(PROJECT_ROOT, "data")
-EOL_FOLDER = os.path.join(BASE_FOLDER, "eol-eos")
-
-# Archiving
-COMPRESSION_LEVEL = 9
-ARCHIVE_FILE = "eol_data.tar.gz"
-
-CATEGORIES_JSON_PATH = os.path.join(BASE_FOLDER, "products_by_category.json")
 
 
 class CiscoEOLJob:
@@ -59,6 +37,8 @@ class CiscoEOLJob:
     """
 
     logger = logging.getLogger("CiscoEOLJob")
+    config = GetEOLConfig()
+    Path(config.EOL_FOLDER).mkdir(parents=True, exist_ok=True)
 
     def __init__(self):
         """
@@ -66,8 +46,6 @@ class CiscoEOLJob:
 
         This constructor ensures that the environment is correctly set up, including Windows-specific event loop handling.
         """
-
-        Path(EOL_FOLDER).mkdir(parents=True, exist_ok=True)
 
         # Workaround for Windows event loop issue
         if sys.platform.startswith("win"):
@@ -86,7 +64,7 @@ class CiscoEOLJob:
         """
         try:
             response = await client.get(eol_url, follow_redirects=True, timeout=None)
-            await asyncio.sleep(TIMEOUT_THREAD)
+            await asyncio.sleep(cls.config.TIMEOUT_THREAD)
 
             if response.status_code in [200, 403]:
                 cls.logger.info(f"Processing EOL response from: {eol_url}")
@@ -223,7 +201,7 @@ class CiscoEOLJob:
         """
         try:
             response = await client.get(fn_url, follow_redirects=True, timeout=None)
-            await asyncio.sleep(TIMEOUT_THREAD)
+            await asyncio.sleep(cls.config.TIMEOUT_THREAD)
 
             if response.status_code in [200, 403]:
                 cls.logger.info(f"Processing FN response from: {fn_url}")
@@ -463,7 +441,7 @@ class CiscoEOLJob:
         """
         async with semaphore:
             try:
-                await asyncio.sleep(TIMEOUT_REQUESTS)
+                await asyncio.sleep(cls.config.TIMEOUT_REQUESTS)
                 eos_object = {}
                 response = await client.get(page, follow_redirects=True, timeout=None)
                 response.raise_for_status()
@@ -492,11 +470,11 @@ class CiscoEOLJob:
 
                 eos_object["EOLS"] = []
                 get_eol_url = page.replace("/support/", "/products/").replace(
-                    "series.html", EOS_EOS_NOTICES_LINK
+                    "series.html", cls.config.EOS_EOS_NOTICES_LINK
                 )
 
                 response = await client.get(get_eol_url, timeout=None)
-                await asyncio.sleep(TIMEOUT_REQUESTS)
+                await asyncio.sleep(cls.config.TIMEOUT_REQUESTS)
 
                 if response.status_code in [200, 403]:
                     soup = BeautifulSoup(response.text, "html.parser")
@@ -515,9 +493,11 @@ class CiscoEOLJob:
                     )
 
                 eos_object["FNS"] = []
-                get_notices_url = page.replace("series.html", FIELD_NOTICES_LINK)
+                get_notices_url = page.replace(
+                    "series.html", cls.config.FIELD_NOTICES_LINK
+                )
                 response = await client.get(get_notices_url, timeout=None)
-                await asyncio.sleep(TIMEOUT_REQUESTS)
+                await asyncio.sleep(cls.config.TIMEOUT_REQUESTS)
 
                 if response.status_code in [200, 403]:
                     soup = BeautifulSoup(response.text, "html.parser")
@@ -548,47 +528,59 @@ class CiscoEOLJob:
         """Main function to run the Cisco EOL/EOS/FN parser and create a tar.gz archive after processing."""
 
         try:
-            with open(CATEGORIES_JSON_PATH) as file:
+            with open(self.config.CATEGORIES_JSON_PATH) as file:
                 products_by_category = json.load(file)
         except:
             self.logger.warning("Products JSON file not found, will try to create one")
             try:
-                await scrape_cisco_products(CATEGORIES_JSON_PATH)
-                with open(CATEGORIES_JSON_PATH) as file:
+                await scrape_cisco_products(self.config.CATEGORIES_JSON_PATH)
+                with open(self.config.CATEGORIES_JSON_PATH) as file:
                     products_by_category = json.load(file)
             except SystemError:
-                raise (FileNotFoundError(f"Could not create {CATEGORIES_JSON_PATH}"))
+                raise (
+                    FileNotFoundError(
+                        f"Could not create {self.config.CATEGORIES_JSON_PATH}"
+                    )
+                )
 
         async with httpx.AsyncClient(
             headers={"User-Agent": "Mozilla/5.0"}, follow_redirects=True
         ) as client:
-            semaphore = asyncio.Semaphore(CONCURRENT_REQUESTS)
+            semaphore = asyncio.Semaphore(self.config.CONCURRENT_REQUESTS)
             tasks = []
 
             for device_category in products_by_category.keys():
                 for product in products_by_category.get(device_category):
                     product_family, product_url = product.values()
-                    path = os.path.join(EOL_FOLDER, device_category, product_family)
+                    path = os.path.join(
+                        self.config.EOL_FOLDER, device_category, product_family
+                    )
                     self.logger.info(f"Processing product family: {product_family}")
                     tasks.append(
-                        self.support_page_parser(product_url, client, path, semaphore)
+                        self.support_page_parser(
+                            product_url, client, str(path), semaphore
+                        )
                     )
 
             # Wait for all the tasks to complete
             await asyncio.gather(*tasks)
 
         # Create tar.gz archive of the EOL_FOLDER
-        tar_filename = os.path.join(BASE_FOLDER, ARCHIVE_FILE)
+        tar_filename = os.path.join(self.config.BASE_FOLDER, self.config.ARCHIVE_FILE)
 
-        with tarfile.open(tar_filename, "w:gz", compresslevel=COMPRESSION_LEVEL) as tar:
-            tar.add(EOL_FOLDER, arcname=os.path.basename(EOL_FOLDER))
+        with tarfile.open(
+            tar_filename, "w:gz", compresslevel=self.config.COMPRESSION_LEVEL
+        ) as tar:
+            tar.add(
+                self.config.EOL_FOLDER, arcname=os.path.basename(self.config.EOL_FOLDER)
+            )
 
         self.logger.info(f"Data archived to {tar_filename}")
         try:
             # Delete the EOL_FOLDER and its contents after archiving
-            shutil.rmtree(EOL_FOLDER)
-            self.logger.info(f"Deleted the folder: {EOL_FOLDER}")
+            shutil.rmtree(self.config.EOL_FOLDER)
+            self.logger.info(f"Deleted the folder: {self.config.EOL_FOLDER}")
             self.logger.info("Job has finished successfully!")
         except (FileNotFoundError, IOError):
-            self.logger.error(f"Folder {EOL_FOLDER} could not be deleted")
+            self.logger.error(f"Folder {self.config.EOL_FOLDER} could not be deleted")
             self.logger.warning("Job has not finished successfully!")

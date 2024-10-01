@@ -5,6 +5,7 @@ import uvicorn
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
 
+from config import GetEOLConfig, GetFeaturesConfig
 from jobs.get_eol_fn import CiscoEOLJob
 from jobs.get_features import GetFeaturesJob
 from routers.features import features_router
@@ -31,10 +32,16 @@ async def lifespan(app: FastAPI):
         None: Allows the FastAPI app to serve requests while tasks run in the background.
     """
     # Create the jobs, add new as needed
-    jobs = [CiscoEOLJob(), GetFeaturesJob()]
+    jobs = [
+        CiscoEOLJob() if GetEOLConfig.ACTIVE else None,
+        GetFeaturesJob() if GetFeaturesConfig.ACTIVE else None,
+    ]
+
+    # Filter out None values from jobs
+    active_jobs = [job for job in jobs if job is not None]
 
     # Schedule the tasks to run concurrently within the current loop / no raw threading
-    tasks = [asyncio.create_task(job.fetch_data()) for job in jobs]
+    tasks = [asyncio.create_task(job.fetch_data()) for job in active_jobs]
     yield
 
     await asyncio.gather(*tasks)
@@ -43,10 +50,16 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     lifespan=lifespan,
     description="""
-    Cisco Services APIs allow partners and customers to programmatically access and consume Cisco data in a simple, secure, and scalable manner. 
-        
-    Cisco Services APIs remove barriers to enterprise automation, increase productivity, help shorten sales cycles, and reduce operating expenses.""",
-    title="Cisco Business Critical Services",
+    This API provides easy access to Cisco device insights, such as:
+
+    - End-of-Life (EOL) dates
+    - Common Vulnerabilities and Exposures (CVEs)
+    - Features and best practices
+
+    The API automates the data collection from Cisco's publicly available site, helping users manage 
+    Cisco devices without the need for formal onboarding or contracts.
+    """,
+    title="Cisco Device Insights API",
 )
 
 

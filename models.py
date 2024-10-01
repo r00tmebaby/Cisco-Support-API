@@ -5,6 +5,8 @@ from pydantic import BaseModel
 
 
 class PlatformTypes(str, Enum):
+    """Enum representing different types of platforms."""
+
     Switches = "Switches"
     Routers = "Routers"
     Wireless = "Wireless"
@@ -15,3 +17,10 @@ class PlatformTypes(str, Enum):
 class Platform(BaseModel):
     by_name: Optional[str] = None
     platform_choice: PlatformTypes = PlatformTypes.Switches
+
+
+class FeaturesRequestModel(BaseModel):
+    platform_id: Optional[int] = None
+    mdf_product_type: Optional[str] = None
+    release_id: Optional[int] = None
+    feature_set_id: Optional[int] = None

@@ -4,7 +4,6 @@ import tarfile
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from multipart.multipart import Field
 
 from config import logging
 from models import Platform
@@ -13,6 +12,8 @@ from utils import PaginationParams, extract_feature, paginate
 features_router = APIRouter(prefix="/feature", tags=["Features"])
 
 logger = logging.getLogger("features")
+
+DEFAULT_FEATURES_PATH = os.path.join("data")
 
 
 @features_router.get(
@@ -24,13 +25,17 @@ logger = logging.getLogger("features")
 def features_platforms(
     platform: Platform = Depends(), pagination: PaginationParams = Depends()
 ):
-    try:
-        with open("data/product_features/platforms.json") as f:
-            results = json.loads(f.read())
-    except FileNotFoundError:
-        logger.warning(
-            f"Platform data not found, please run Get Features job to create one"
+    platform_file_path = os.path.join(DEFAULT_FEATURES_PATH, "platforms.json")
+
+    if not os.path.isfile(platform_file_path):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Platform file at {platform_file_path} not found, please run Get Features job to create one",
         )
+
+    with open(platform_file_path) as f:
+        results = json.loads(f.read())
+
     if platform.by_name:
         search_results = [
             platform_data
@@ -53,7 +58,15 @@ def get_releases(
     platform_id: Optional[int] = Query(None, description="ID of the platform"),
     pagination: PaginationParams = Depends(),
 ):
-    with open("data/product_features/releases.json") as f:
+    releases_file_path = os.path.join(DEFAULT_FEATURES_PATH, "releases.json")
+
+    if not os.path.isfile(releases_file_path):
+        raise HTTPException(
+            status_code=404,
+            detail=f"File {releases_file_path} not found, please run Get Features job",
+        )
+
+    with open(releases_file_path) as f:
         releases = json.loads(f.read())
 
     filtered_releases = []
@@ -77,11 +90,15 @@ def get_features(
     release_id: int,
     pagination: PaginationParams = Depends(),
 ):
-    tar_path = "data/product_features/features.tar.gz"
+
+    tar_path = os.path.join(DEFAULT_FEATURES_PATH, "features.tar.gz")
     file_name = f"{platform_id}_{release_id}.json"
 
     if not os.path.exists(tar_path):
-        raise HTTPException(status_code=404, detail="Feature archive not found.")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Feature archive at {tar_path}, please run Get Features job",
+        )
 
     try:
         features = extract_feature(tar_path, file_name)
