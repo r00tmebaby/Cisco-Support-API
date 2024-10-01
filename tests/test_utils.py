@@ -17,8 +17,13 @@ class TestUtilsFunctions(unittest.TestCase):
         save_to_json(data, filename)
 
         mock_makedirs.assert_called_once_with(os.path.dirname(filename), exist_ok=True)
-        mock_file().write.assert_called_once()
-        mock_file().write.assert_any_call('{\n    "key": "value"\n}')
+
+        # Join the content written to the file
+        written_data = "".join(
+            call_args[0][0] for call_args in mock_file().write.call_args_list
+        )
+        expected_data = '{\n    "key": "value"\n}'
+        self.assertEqual(written_data, expected_data)
 
     def test_normalize_to_camel_case(self):
         """Test normalization of table header to camelCase."""

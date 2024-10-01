@@ -110,6 +110,10 @@ async def test_fetch_all_features():
 async def test_fetch_data():
     job = GetFeaturesJob()
 
+    # Ensure that FETCH_FEATURES_ONLINE is True during the test
+    job.config = AsyncMock()
+    job.config.FETCH_FEATURES_ONLINE = True
+
     with patch.object(
         job, "_fetch_platforms_data", new_callable=AsyncMock
     ) as mock_fetch_platforms, patch.object(
