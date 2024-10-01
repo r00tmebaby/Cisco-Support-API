@@ -5,6 +5,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from multipart.multipart import Field
+
 from config import logging
 from models import Platform
 from utils import PaginationParams, extract_feature, paginate

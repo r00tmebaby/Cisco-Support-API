@@ -1,21 +1,21 @@
 from __future__ import annotations
 
-import re
-import sys
 import asyncio
 import json
-import os
 import logging
+import os
+import re
+import sys
 from datetime import datetime
 from pathlib import Path
 from threading import Semaphore
-from typing import Dict, Union, List
+from typing import Dict, List, Union
 from urllib.parse import urljoin
 
 import httpx
 from bs4 import BeautifulSoup
 
-from utils import normalize_date_format, save_to_json, normalize_to_camel_case
+from utils import normalize_date_format, normalize_to_camel_case, save_to_json
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Get the project root directory

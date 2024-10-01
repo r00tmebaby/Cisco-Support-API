@@ -4,10 +4,12 @@ import os
 import tarfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from config import logging
+
 import aiofiles
 import httpx
 from pydantic import BaseModel
+
+from config import logging
 
 
 class Config:
