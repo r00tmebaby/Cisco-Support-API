@@ -68,7 +68,7 @@ class GetFeaturesJob:
         :return: A list of release data.
         """
         platform_id = each_platform.get("platform_id")
-        self.logger.info(f"Fetching releases for {platform_id}")
+        self.logger.info(f"Fetching releases for platform {platform_id}")
         request = FeaturesRequestModel(
             platform_id=platform_id, mdf_product_type=each_type
         )
