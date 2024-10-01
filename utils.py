@@ -1,6 +1,9 @@
 import inspect
 import json
+import os
+import re
 import tarfile
+from datetime import datetime
 from functools import lru_cache, wraps
 from typing import Any, Callable, Dict, List, Union
 
@@ -27,6 +30,47 @@ class PaginationParams:
     @property
     def offset(self):
         return (self.page - 1) * self.limit
+
+
+def save_to_json(data: Dict, filename: str) -> None:
+    """Saves dict data to a JSON file."""
+    try:
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        with open(filename, "w") as f:
+            json.dump(data, f, indent=4)
+        logger.info(f"Data saved to {filename}")
+    except Exception as e:
+        logger.error(f"Error saving JSON file {filename}: {str(e)}")
+
+
+def normalize_to_camel_case(header: str) -> str:
+    """
+    Normalize a table header to camelCase format.
+
+    :param header: The header string to be normalized.
+    :return: A string in camelCase format.
+    """
+    # Remove special characters and split by spaces
+    words = re.sub(r"[^\w\s]", "", header).split()
+    return words[0].lower() + "".join(word.capitalize() for word in words[1:])
+
+
+def normalize_date_format(date_str: str, date_format: str = "%d-%b-%Y") -> str:
+    """
+    Converts a date string from 'dd-MMM-yyyy' to 'dd-mm-yyyy'.
+
+    Args:
+        date_str (str): The date string to convert.
+        date_format (str): The date format to use.
+    Returns:
+        str: The converted date string or the original one if conversion fails.
+    """
+    try:
+        date_object = datetime.strptime(date_str, date_format)
+        return date_object.strftime("%d-%m-%Y")
+    except ValueError:
+        logger.error(f"Failed to convert date format for {date_str}")
+        return date_str
 
 
 def paginate(func: Callable[..., Union[List[Dict[str, Any]], Dict[str, Any]]]):
@@ -62,7 +106,7 @@ def paginate(func: Callable[..., Union[List[Dict[str, Any]], Dict[str, Any]]]):
             response_json = jsonable_encoder(response_data)
             return JSONResponse(content=response_json)
         except Exception as e:
-            print(f"Error generating JSON response: {e}")
+            logger.error(f"Error generating JSON response: {e}")
             raise HTTPException(
                 status_code=500, detail="Error generating JSON response"
             )

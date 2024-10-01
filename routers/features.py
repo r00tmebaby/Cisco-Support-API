@@ -12,6 +12,8 @@ from utils import PaginationParams, extract_feature, paginate
 features_router = APIRouter(prefix="/feature", tags=["Features"])
 
 logger = logging.getLogger("features")
+
+
 @features_router.get(
     "/platforms",
     summary="Get platforms",
