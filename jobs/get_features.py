@@ -30,6 +30,7 @@ class GetFeaturesJob:
         - Releases: https://cfnngws.cisco.com/api/v1/release
         - Features: https://cfnngws.cisco.com/api/v1/by_product_result
     """
+
     config = GetFeaturesConfig()
 
     def __init__(self):
@@ -57,7 +58,9 @@ class GetFeaturesJob:
         await asyncio.sleep(1)
         if response.status_code == 200:
             json_response = response.json()
-            await self._save_to_file(json_response, self.config.PROJECT_DATA_DIR / "platforms.json", 4)
+            await self._save_to_file(
+                json_response, self.config.PROJECT_DATA_DIR / "platforms.json", 4
+            )
             return response.json()
         return {}
 
@@ -69,7 +72,9 @@ class GetFeaturesJob:
         :return: The hash string (4-byte hash for space efficiency).
         """
         feature_str = f"{feature['feature_name']}_{feature['feature_desc']}_{feature['feature_set_desc']}"
-        return hashlib.blake2b(feature_str.encode(), digest_size=cls.config.HASHING_DIGEST).hexdigest()
+        return hashlib.blake2b(
+            feature_str.encode(), digest_size=cls.config.HASHING_DIGEST
+        ).hexdigest()
 
     async def _fetch_releases(
         self,
@@ -110,7 +115,7 @@ class GetFeaturesJob:
         self,
         client: httpx.AsyncClient,
         each_release: Dict[str, Any],
-        mdf_product_type: str
+        mdf_product_type: str,
     ) -> None:
         """
         Fetch features for the given release.
@@ -178,20 +183,17 @@ class GetFeaturesJob:
             semaphore = asyncio.Semaphore(self.config.CONCURRENT_REQUESTS_LIMIT)
 
             async def fetch_features_with_semaphore(
-                    release: Dict[str, Any],
-                    product_type: str
+                release: Dict[str, Any], product_type: str
             ):
                 async with semaphore:
-                    await self._fetch_features(
-                        client,
-                        release,
-                        product_type
-                    )
+                    await self._fetch_features(client, release, product_type)
 
             feature_tasks = []
             for mdf_product_type, releases_list in releases.items():
                 for each_release in releases_list:
-                    feature_tasks.append(fetch_features_with_semaphore(each_release, mdf_product_type))
+                    feature_tasks.append(
+                        fetch_features_with_semaphore(each_release, mdf_product_type)
+                    )
             await asyncio.gather(*feature_tasks)
             self.logger.info("Fetched all features data")
 
@@ -206,7 +208,10 @@ class GetFeaturesJob:
                 await self._fetch_and_archive_features(releases)
                 self.logger.info("Job completed successfully")
         except Exception as e:
-            self.logger.error("Job failed to fetch platforms, releases, and features. Error: %s", e)
+            self.logger.error(
+                "Job failed to fetch platforms, releases, and features. Error: %s", e
+            )
+
     async def _fetch_platforms_data(self) -> Dict[str, Any]:
         """
         Fetch or read platforms data.
@@ -247,7 +252,9 @@ class GetFeaturesJob:
                     tar.add(file_path, arcname=file_path.name)
             shutil.rmtree(self.config.FEATURES_DIR)
 
-            self.logger.info("Successfully archived all features and unique_features.json to features.tar.gz")
+            self.logger.info(
+                "Successfully archived all features and unique_features.json to features.tar.gz"
+            )
         except Exception as e:
             self.logger.error(f"Failed to archive {e}")
 
@@ -289,14 +296,13 @@ class GetFeaturesJob:
                 self.logger.info(
                     f"Retrieved {len(releases[each_type])} releases for {each_type}"
                 )
-        await self._save_to_file(releases, self.config.PROJECT_DATA_DIR / "releases.json", 4)
+        await self._save_to_file(
+            releases, self.config.PROJECT_DATA_DIR / "releases.json", 4
+        )
         return releases
 
     async def _save_to_file(
-            self,
-            data: Union[List[str],Dict[str, Any]],
-            filename: Path,
-            indent: int = 0
+        self, data: Union[List[str], Dict[str, Any]], filename: Path, indent: int = 0
     ):
         """
         Save the given data to a JSON file.

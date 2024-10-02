@@ -3,7 +3,6 @@ This file contains the API and jobs main config, you can adjust the values witho
 ACTIVE = TRUE/FALSE : job active/inactive
 """
 
-
 import logging
 import os
 from pathlib import Path
@@ -52,7 +51,7 @@ class GetFeaturesConfig(Config):
     # Be carefully with this value, Cisco may block your IP for 24 hours
     CONCURRENT_REQUESTS_LIMIT = 5
     REQUEST_DELAY = 1
-    FEATURES_DIR: Path = Config.PROJECT_DATA_DIR  / "features"
+    FEATURES_DIR: Path = Config.PROJECT_DATA_DIR / "features"
     TYPES = [ptype.value for ptype in PlatformTypes]
     HEADERS = {}
     REQUEST_1 = "https://cfnngws.cisco.com/api/v1/platform"
@@ -64,6 +63,7 @@ class GetFeaturesConfig(Config):
         # Ensure the directory exists when the class is instantiated
         super().__init__()
         self.FEATURES_DIR.mkdir(exist_ok=True, parents=True)
+
 
 class GetEOLConfig(Config):
     ACTIVE = True

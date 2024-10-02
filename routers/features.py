@@ -5,14 +5,13 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from config import logging, Config
+from config import Config, logging
 from models import Platform
 from utils import PaginationParams, extract_feature, paginate
 
 features_router = APIRouter(prefix="/feature", tags=["Features"])
 
 logger = logging.getLogger("features")
-
 
 
 @features_router.get(
