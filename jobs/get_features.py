@@ -1,8 +1,11 @@
 import asyncio
+import hashlib
 import json
 import os
+import shutil
 import tarfile
-from typing import Any, Dict, List
+from pathlib import Path
+from typing import Any, Dict, List, Union
 
 import aiofiles
 import httpx
@@ -27,10 +30,12 @@ class GetFeaturesJob:
         - Releases: https://cfnngws.cisco.com/api/v1/release
         - Features: https://cfnngws.cisco.com/api/v1/by_product_result
     """
+    config = GetFeaturesConfig()
 
     def __init__(self):
         self.config = GetFeaturesConfig()
         self.logger = logging.getLogger("GetFeaturesJob")
+        self.unique_features = {}
 
     async def _fetch_platforms(
         self, client: httpx.AsyncClient, each_type: str
@@ -47,12 +52,24 @@ class GetFeaturesJob:
             self.config.REQUEST_1,
             headers=self.config.HEADERS,
             json=request.model_dump(),
-            timeout=900,
+            timeout=None,
         )
         await asyncio.sleep(1)
         if response.status_code == 200:
+            json_response = response.json()
+            await self._save_to_file(json_response, self.config.PROJECT_DATA_DIR / "platforms.json", 4)
             return response.json()
         return {}
+
+    @classmethod
+    def generate_feature_hash(cls, feature: Dict[str, Any]) -> str:
+        """
+        Generate a unique hash for each feature based on feature_name, feature_desc, and feature_set_desc.
+        :param feature: The feature object.
+        :return: The hash string (4-byte hash for space efficiency).
+        """
+        feature_str = f"{feature['feature_name']}_{feature['feature_desc']}_{feature['feature_set_desc']}"
+        return hashlib.blake2b(feature_str.encode(), digest_size=cls.config.HASHING_DIGEST).hexdigest()
 
     async def _fetch_releases(
         self,
@@ -76,7 +93,7 @@ class GetFeaturesJob:
             self.config.REQUEST_2,
             headers=self.config.HEADERS,
             json=request.model_dump(),
-            timeout=900,
+            timeout=None,
         )
         await asyncio.sleep(10)
         if response.status_code == 200:
@@ -93,15 +110,13 @@ class GetFeaturesJob:
         self,
         client: httpx.AsyncClient,
         each_release: Dict[str, Any],
-        mdf_product_type: str,
-        tar: tarfile.TarFile,
+        mdf_product_type: str
     ) -> None:
         """
         Fetch features for the given release.
         :param client: The HTTP client to use for the request.
         :param each_release: The release data to fetch features for.
         :param mdf_product_type: The type of product.
-        :param tar: The tar file to add the features' data.
         """
         self.logger.info(
             f"Fetching features for platform {each_release['platform_id']} and release {each_release['release_id']}"
@@ -115,27 +130,24 @@ class GetFeaturesJob:
             self.config.REQUEST_3,
             headers=self.config.HEADERS,
             json=request.model_dump(),
-            timeout=900,
+            timeout=None,
         )
         await asyncio.sleep(self.config.REQUEST_DELAY)
-
+        platform_features = []
         if response.status_code == 200:
             response_text = await response.aread()
             features_data = json.loads(response_text)
             for feature in features_data:
-                feature["platform_id"] = each_release["platform_id"]
-                feature["release_id"] = each_release["release_id"]
-
+                make_uuid = self.generate_feature_hash(feature)
+                if make_uuid not in self.unique_features.keys():
+                    self.unique_features[make_uuid] = feature
+                platform_features.append(make_uuid)
             file_name = (
                 f"{each_release['platform_id']}_{each_release['release_id']}.json"
             )
             file_path = self.config.FEATURES_DIR / file_name
+            await self._save_to_file(platform_features, file_path)
 
-            async with aiofiles.open(file_path, "w") as file:
-                await file.write(json.dumps(features_data, indent=4))
-
-            tar.add(file_path, arcname=file_name)
-            os.remove(file_path)
         else:
             self.logger.error(
                 f"Failed to fetch features for platform "
@@ -157,31 +169,29 @@ class GetFeaturesJob:
             contents = await infile.read()
             return json.loads(contents)
 
-    async def _fetch_all_features(
-        self, releases: Dict[str, List[Dict[str, Any]]], tar: tarfile.TarFile
-    ):
+    async def _fetch_all_features(self, releases: Dict[str, List[Dict[str, Any]]]):
         """
-        Fetch all features for the given releases and save them directly to the tar file.
+        Fetch all features for the given releases and save them to disk.
         :param releases: The release data to fetch features for.
-        :param tar: The tar file to add the features' data.
         """
-        async with httpx.AsyncClient(timeout=900) as client:
+        async with httpx.AsyncClient(timeout=None) as client:
             semaphore = asyncio.Semaphore(self.config.CONCURRENT_REQUESTS_LIMIT)
 
             async def fetch_features_with_semaphore(
-                each_release: Dict[str, Any], mdf_product_type: str
+                    release: Dict[str, Any],
+                    product_type: str
             ):
                 async with semaphore:
                     await self._fetch_features(
-                        client, each_release, mdf_product_type, tar
+                        client,
+                        release,
+                        product_type
                     )
 
             feature_tasks = []
             for mdf_product_type, releases_list in releases.items():
                 for each_release in releases_list:
-                    feature_tasks.append(
-                        fetch_features_with_semaphore(each_release, mdf_product_type)
-                    )
+                    feature_tasks.append(fetch_features_with_semaphore(each_release, mdf_product_type))
             await asyncio.gather(*feature_tasks)
             self.logger.info("Fetched all features data")
 
@@ -189,11 +199,14 @@ class GetFeaturesJob:
         """
         Fetch platforms, releases, and features data.
         """
-        platforms = await self._fetch_platforms_data()
-        releases = await self._fetch_releases_data(platforms)
-        if self.config.FETCH_FEATURES_ONLINE:
-            await self._fetch_and_archive_features(releases)
-
+        try:
+            platforms = await self._fetch_platforms_data()
+            releases = await self._fetch_releases_data(platforms)
+            if self.config.FETCH_FEATURES_ONLINE:
+                await self._fetch_and_archive_features(releases)
+                self.logger.info("Job completed successfully")
+        except Exception as e:
+            self.logger.error("Job failed to fetch platforms, releases, and features. Error: %s", e)
     async def _fetch_platforms_data(self) -> Dict[str, Any]:
         """
         Fetch or read platforms data.
@@ -215,19 +228,35 @@ class GetFeaturesJob:
 
     async def _fetch_and_archive_features(self, releases: Dict[str, Any]):
         """
-        Fetch all features and archive them.
+        Fetch all features, save them to disk, and then archive them into a tar.gz file.
         :param releases: A dictionary containing releases data.
         """
-        archive_path = self.config.FEATURES_DIR / "features.tar.gz"
-        with tarfile.open(archive_path, "w:gz") as tar:
-            await self._fetch_all_features(releases, tar)
+        try:
+            archive_path = self.config.PROJECT_DATA_DIR / "features_data.tar.gz"
+            unique_features_file = self.config.FEATURES_DIR / "unique_features.json"
+
+            # Save all feature data to disk first
+            await self._fetch_all_features(releases)
+
+            # Save the unique features to disk
+            await self._save_to_file(self.unique_features, unique_features_file, 4)
+
+            # Create the tar.gz file and add all JSON files from the directory
+            with tarfile.open(archive_path, "w:gz") as tar:
+                for file_path in self.config.FEATURES_DIR.glob("*.json"):
+                    tar.add(file_path, arcname=file_path.name)
+            shutil.rmtree(self.config.FEATURES_DIR)
+
+            self.logger.info("Successfully archived all features and unique_features.json to features.tar.gz")
+        except Exception as e:
+            self.logger.error(f"Failed to archive {e}")
 
     async def _fetch_online_platforms(self) -> Dict[str, Any]:
         """
         Fetch platforms data from the online API.
         :return: A dictionary containing platforms data.
         """
-        async with httpx.AsyncClient(timeout=900) as client:
+        async with httpx.AsyncClient(timeout=None) as client:
             platform_tasks = [
                 self._fetch_platforms(client, each_type)
                 for each_type in self.config.TYPES
@@ -246,7 +275,7 @@ class GetFeaturesJob:
         :return: A dictionary containing releases data.
         """
         releases = {}
-        async with httpx.AsyncClient(timeout=900) as client:
+        async with httpx.AsyncClient(timeout=None) as client:
             for each_type in self.config.TYPES:
                 platform_data = platforms.get(each_type, [])
                 release_tasks = [
@@ -260,18 +289,24 @@ class GetFeaturesJob:
                 self.logger.info(
                     f"Retrieved {len(releases[each_type])} releases for {each_type}"
                 )
+        await self._save_to_file(releases, self.config.PROJECT_DATA_DIR / "releases.json", 4)
         return releases
 
-    async def _save_to_file(self, data: Dict[str, Any], filename: str):
+    async def _save_to_file(
+            self,
+            data: Union[List[str],Dict[str, Any]],
+            filename: Path,
+            indent: int = 0
+    ):
         """
         Save the given data to a JSON file.
         :param data: The data to save.
         :param filename: The name of the file to save the data in.
         """
-        async with aiofiles.open(
-            os.path.join(self.config.FEATURES_DIR, filename), "w"
-        ) as outfile:
-            await outfile.write(json.dumps(data, indent=4))
+        indent = indent if indent else None
+
+        async with aiofiles.open(filename, "w") as outfile:
+            await outfile.write(json.dumps(data, indent=indent))
         self.logger.info(
             f"Saved data to {os.path.join(self.config.FEATURES_DIR, filename)}"
         )
