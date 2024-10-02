@@ -5,13 +5,18 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from config import Config, logging
+from config import Config, GetFeaturesConfig, logging
 from models import Platform
-from utils import PaginationParams, extract_feature, paginate
+from utils import FeatureExtractor, PaginationParams, paginate
 
 features_router = APIRouter(prefix="/feature", tags=["Features"])
 
 logger = logging.getLogger("features")
+
+# Create a global instance of FeatureExtractor for accessing tar file
+feature_extractor = FeatureExtractor(
+    tar_path=Config.PROJECT_DATA_DIR / GetFeaturesConfig.ARCHIVE_FILENAME
+)
 
 
 @features_router.get(
@@ -37,13 +42,13 @@ def features_platforms(
     if platform.by_name:
         search_results = [
             platform_data
-            for platform_data in results[platform.platform_choice.value]
+            for platform_data in results[platform.platform_choice]
             if platform.by_name.lower()
             in platform_data.get("platform_name", "").lower()
         ]
         return search_results
 
-    return results[platform.platform_choice.value]
+    return results[platform.platform_choice]
 
 
 @features_router.get(
@@ -88,18 +93,17 @@ def get_features(
     release_id: int,
     pagination: PaginationParams = Depends(),
 ):
-
-    tar_path = os.path.join(Config.PROJECT_DATA_DIR, "features.tar.gz")
     file_name = f"{platform_id}_{release_id}.json"
 
-    if not os.path.exists(tar_path):
+    if not os.path.exists(feature_extractor.tar_path):
         raise HTTPException(
             status_code=404,
-            detail=f"Feature archive at {tar_path}, please run Get Features job",
+            detail=f"Feature archive at {feature_extractor.tar_path} not found, please run Get Features job",
         )
 
     try:
-        features = extract_feature(tar_path, file_name)
+        features = feature_extractor.extract_feature(file_name)
+
     except tarfile.ReadError:
         # The tar file is not readable, possibly because it is still being written
         raise HTTPException(

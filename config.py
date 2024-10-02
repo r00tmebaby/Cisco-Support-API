@@ -38,7 +38,7 @@ class Config:
 
 
 class GetFeaturesConfig(Config):
-    ACTIVE = True
+    ACTIVE = False
 
     FETCH_PLATFORMS_ONLINE = True
     FETCH_RELEASES_ONLINE = True
@@ -51,6 +51,8 @@ class GetFeaturesConfig(Config):
     # Be carefully with this value, Cisco may block your IP for 24 hours
     CONCURRENT_REQUESTS_LIMIT = 5
     REQUEST_DELAY = 1
+    ARCHIVE_FILENAME = "features_data.tar.gz"
+    UNIQUE_FEATURES_FILENAME = "unique_features.json"
     FEATURES_DIR: Path = Config.PROJECT_DATA_DIR / "features"
     TYPES = [ptype.value for ptype in PlatformTypes]
     HEADERS = {}
@@ -66,7 +68,7 @@ class GetFeaturesConfig(Config):
 
 
 class GetEOLConfig(Config):
-    ACTIVE = True
+    ACTIVE = False
 
     FIELD_NOTICES_LINK = "products-field-notices-list.html"
     EOS_EOS_NOTICES_LINK = "eos-eol-notice-listing.html"

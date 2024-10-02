@@ -57,10 +57,6 @@ class GetFeaturesJob:
         )
         await asyncio.sleep(1)
         if response.status_code == 200:
-            json_response = response.json()
-            await self._save_to_file(
-                json_response, self.config.PROJECT_DATA_DIR / "platforms.json", 4
-            )
             return response.json()
         return {}
 
@@ -237,8 +233,10 @@ class GetFeaturesJob:
         :param releases: A dictionary containing releases data.
         """
         try:
-            archive_path = self.config.PROJECT_DATA_DIR / "features_data.tar.gz"
-            unique_features_file = self.config.FEATURES_DIR / "unique_features.json"
+            archive_path = self.config.PROJECT_DATA_DIR / self.config.ARCHIVE_FILENAME
+            unique_features_file = (
+                self.config.FEATURES_DIR / self.config.UNIQUE_FEATURES_FILENAME
+            )
 
             # Save all feature data to disk first
             await self._fetch_all_features(releases)
@@ -273,6 +271,9 @@ class GetFeaturesJob:
                 each_type: data
                 for each_type, data in zip(self.config.TYPES, platforms_results)
             }
+        await self._save_to_file(
+            platforms, self.config.PROJECT_DATA_DIR / "platforms.json", 4
+        )
         return platforms
 
     async def _fetch_online_releases(self, platforms: Dict[str, Any]) -> Dict[str, Any]:

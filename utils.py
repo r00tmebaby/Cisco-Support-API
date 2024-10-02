@@ -6,11 +6,15 @@ import re
 import tarfile
 from datetime import datetime
 from functools import lru_cache, wraps
+from http.client import responses
 from typing import Any, Callable, Dict, List, Union
 
+from click import Tuple
 from fastapi import Depends, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse
+
+from config import GetFeaturesConfig
 
 logger = logging.getLogger("Utils")
 
@@ -116,23 +120,61 @@ def paginate(func: Callable[..., Union[List[Dict[str, Any]], Dict[str, Any]]]):
     return async_wrapper
 
 
-@lru_cache(maxsize=128)
-def extract_feature(tar_path: str, file_name: str) -> List[Dict[str, Any]]:
-    with tarfile.open(tar_path, "r:gz") as tar:
+class FeatureExtractor:
+    """
+    Class responsible for extracting features from the tar file and caching the tar file in memory.
+    """
+
+    def __init__(self, tar_path: str):
+        self.tar_path = tar_path
+        self.tar_file = None
+
+    def load_tar_file(self):
+        """Load the tar file into memory."""
+        if not self.tar_file:
+            self.tar_file = tarfile.open(self.tar_path, "r:gz")
+            logger.info(f"Features archive file loaded into memory: {self.tar_path}")
+
+    def get_tar_file(self):
+        """Return the in-memory tar file, loading it if not already loaded."""
+        if not self.tar_file:
+            self.load_tar_file()
+        return self.tar_file
+
+    @lru_cache(maxsize=128)
+    def extract_feature(self, file_name: str) -> List[Any]:
+        """
+        Extract features from the in-memory tar file based on the file name and return the unique features list.
+        :param file_name: The name of the platform-release JSON file.
+        :return: List of features.
+        """
+        tar = self.get_tar_file()
+
         try:
-            file = tar.extractfile(file_name)
-            if file is None:
-                logger.warning(
-                    "Feature data not found for the given platform_id and release_id."
-                )
+            platform_file = tar.extractfile(file_name)
+            unique_file = tar.extractfile(GetFeaturesConfig.UNIQUE_FEATURES_FILENAME)
+
+            if platform_file is None or unique_file is None:
+                logger.warning(f"File {file_name} or unique features not found.")
                 return []
 
-            file_content = file.read().decode("utf-8")
-            features = json.loads(file_content)
-            if not isinstance(features, list):
-                logger.warning("Feature data should be a list.")
-                return []
-            return features
+            platform_file_content = platform_file.read().decode("utf-8")
+            unique_file_content = unique_file.read().decode("utf-8")
+
+            features = json.loads(platform_file_content)
+            unique_features = json.loads(unique_file_content)
+
+            # Build the list of features using the feature hashes from the unique features file
+            list_of_features = [
+                unique_features[feature]
+                for feature in features
+                if feature in unique_features
+            ]
+
+            return list_of_features
         except KeyError as ex:
-            logger.error(ex)
+            logger.error(f"KeyError: {ex}")
+            return []
+        except Exception as ex:
+            logger.error(f"Error extracting features: {ex}")
             return []
