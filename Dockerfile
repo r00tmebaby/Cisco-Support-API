@@ -8,9 +8,9 @@ COPY requirements.txt .
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY app/ .
 
 EXPOSE 8000
 
 # Run uvicorn with multiple workers and threading
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app/server:app", "--host", "0.0.0.0", "--port", "8000"]

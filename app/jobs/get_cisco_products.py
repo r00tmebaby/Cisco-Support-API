@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 import httpx
 from bs4 import BeautifulSoup
 
-from config import Config, logging
+from app.config import Config, logging
 
 logger = logging.Logger("GetCiscoProductsJob")
 

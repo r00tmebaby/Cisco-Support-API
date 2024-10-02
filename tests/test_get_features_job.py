@@ -1,10 +1,9 @@
 import json
-import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from jobs.get_features import GetFeaturesJob, RequestModel
+from app.jobs.get_features import GetFeaturesJob, RequestModel
 
 
 @pytest.mark.asyncio
