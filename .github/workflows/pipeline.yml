@@ -55,10 +55,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install black isort
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Check code compliance with black and isort
+    - name: Check and fix import sorting with isort
       run: |
-        black --check . 
-        isort --check-only .
+        isort --profile black .  # Ensure isort uses the Black profile
+    - name: Check code compliance with black
+      run: |
+        black --check .
 
   tests:
     runs-on: ubuntu-latest
