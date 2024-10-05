@@ -80,9 +80,12 @@ class GetEOLConfig(Config):
 
     BASE_FOLDER = Config.PROJECT_DATA_DIR
     EOL_FOLDER = os.path.join(BASE_FOLDER, "eol-eos")
-
+    EOL_FILE_NAME = "eol.json"
     # Archiving
     COMPRESSION_LEVEL = 9
     ARCHIVE_FILE = "eol_data.tar.gz"
+
+    # Refreshing cashing in seconds
+    DATA_REFRESH_INTERVAL = 60 * 60  # 1 hour
 
     CATEGORIES_JSON_PATH = os.path.join(BASE_FOLDER, "products_by_category.json")

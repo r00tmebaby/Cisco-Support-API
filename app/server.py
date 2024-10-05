@@ -6,6 +6,7 @@ from config import GetEOLConfig, GetFeaturesConfig
 from fastapi import FastAPI
 from jobs.get_eol_fn import CiscoEOLJob
 from jobs.get_features import GetFeaturesJob
+from routers.config_best_practices_router import best_practices_router
 from routers.features_router import features_router
 from routers.product_alerts import product_alerts_router
 from starlette.responses import RedirectResponse
@@ -71,6 +72,7 @@ def read_root():
 # Include the features router in the main app
 app.include_router(features_router)
 app.include_router(product_alerts_router)
+app.include_router(best_practices_router)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

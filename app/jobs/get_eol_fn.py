@@ -105,6 +105,8 @@ class CiscoEOLJob:
         :return: The EOL ID as a string or None if not found.
         """
         eol_id_element = eol_soup.select_one("p.pSubhead2CMT")
+        if not eol_id_element:
+            eol_id_element = eol_soup.select_one("p.pToC_Subhead2")
         return eol_id_element.get_text(strip=True) if eol_id_element else None
 
     @classmethod
@@ -517,7 +519,7 @@ class CiscoEOLJob:
                         f"Error fetching FN from {get_notices_url}: {response.status_code}"
                     )
 
-                save_to_json(eos_object, os.path.join(path, "eol.json"))
+                await save_to_json(eos_object, GetEOLConfig.EOL_FILE_NAME)
             except Exception as e:
                 cls.logger.error(f"Error processing support page {page}: {str(e)}")
 

@@ -6,12 +6,10 @@ import re
 import tarfile
 from datetime import datetime
 from functools import lru_cache, wraps
-from http.client import responses
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Union
 
 import aiofiles
-from click import Tuple
 from config import GetFeaturesConfig
 from fastapi import Depends, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
@@ -168,9 +166,7 @@ def paginate(func: Callable[..., Union[List[Dict[str, Any]], Dict[str, Any]]]):
 
 
 class TarExtractor:
-    """
-    Class responsible for extracting files from the tar file and caching the tar file in memory.
-    """
+    """Class responsible for extracting files from the tar file and caching the tar file in memory."""
 
     def __init__(self, tar_path: str):
         self.tar_path = tar_path
@@ -188,8 +184,7 @@ class TarExtractor:
         return self.tar_file
 
     def extract_raw_file(self, file_name: str) -> str:
-        """
-        Extract a raw file from the tar archive as a string.
+        """Extract a raw file from the tar archive as a string.
         :param file_name: The name of the file to extract.
         :return: The raw file content as a string.
         """
@@ -207,8 +202,7 @@ class TarExtractor:
             return ""
 
     def iterate_tar_file(self, target_file_name: str = "eol.json") -> List[dict]:
-        """
-        Iterate over the tar file and return the content of target files (e.g., 'eol.json').
+        """Iterate over the tar file and return the content of target files (e.g., 'eol.json').
         :param target_file_name: The name of the file to search for within the tar archive.
         :return: A list of file contents (assumed to be JSON) as dictionaries.
         """
@@ -238,8 +232,7 @@ class TarExtractor:
 class FeatureExtractor(TarExtractor):
     @lru_cache(maxsize=128)
     def extract_feature(self, file_name: str) -> List[Any]:
-        """
-        Extract and process features from the tar file.
+        """Extract and process features from the tar file.
         :param file_name: The name of the platform-release JSON file.
         :return: List of processed features.
         """
@@ -266,19 +259,49 @@ class FeatureExtractor(TarExtractor):
             return []
 
 
+import json
+import os
+import threading
+import time
+from typing import Dict, List, Union
+
+
 class ProductAlertsExtractor(TarExtractor):
-    @lru_cache(maxsize=128)
-    def extract_products_eol(self) -> Union[list[Any], str]:
+    def __init__(
+        self, tar_path: str, refresh_interval: int = GetEOLConfig.DATA_REFRESH_INTERVAL
+    ) -> None:
         """
-        Extract products alerts from the tar file.
-        :param pid: Device Product ID
-        :return: List of features.
+        Initialize the ProductAlertsExtractor by extracting product alerts and setting
+        the list of field notices (FNS) and end-of-life notices (EOLS). Start a background
+        task to refresh the content every `refresh_interval` seconds.
+
+        :param tar_path: Path to the tar file containing product alert data.
+        :param refresh_interval: Interval in seconds to refresh data in the background. Default is 60 seconds.
         """
-        file_contents = self.iterate_tar_file(target_file_name="eol.json")
+        super().__init__(tar_path)
+
+        self.tar_path = tar_path
+        self.refresh_interval = refresh_interval
+        self._product_alerts_content = self._extract_products_archive()
+        self._list_of_fns = self._set_list_of_fns()
+        self._list_of_eols = self._set_list_of_eols()
+
+        # Start the background thread to refresh data
+        self._start_background_refresh()
+
+    def _extract_products_archive(self) -> Union[list[Any], str]:
+        """
+        Extract product alerts from the tar file. If the content is a JSON string, it
+        is decoded; otherwise, it's directly appended if it is already a dictionary.
+
+        :return: A list of product alert data extracted from the tar file.
+        """
+        file_contents = self.iterate_tar_file(
+            target_file_name=GetEOLConfig.EOL_FILE_NAME
+        )
 
         product_alerts = []
         for content in file_contents:
-            # Check if the content is a string, then decode as JSON
             if isinstance(content, str):
                 try:
                     alerts = json.loads(content)  # Decode JSON if it's a string
@@ -286,9 +309,101 @@ class ProductAlertsExtractor(TarExtractor):
                 except json.JSONDecodeError as ex:
                     logger.error(f"Error decoding JSON content: {ex}")
             elif isinstance(content, dict):
-                # If content is already a dict, append it directly
                 product_alerts.append(content)
             else:
                 logger.error(f"Unexpected content type: {type(content)}")
-
         return product_alerts
+
+    def _set_list_of_fns(self) -> List[Dict[str, str]]:
+        """
+        Set the list of field notices (FNS) extracted from the product alerts.
+
+        :return: A list of field notices (FNS) from the extracted product alert data.
+        """
+        list_of_fns = []
+        for alerts in self._product_alerts_content:
+            notices = alerts.get("FNS", [])
+            for notice in notices:
+                list_of_fns.append(notice)
+        return list_of_fns
+
+    def _set_list_of_eols(self) -> List[Dict[str, str]]:
+        """
+        Set the list of end-of-life (EOL) notices extracted from the product alerts.
+        Additional general dates are added to the EOL notices, such as the series
+        release date, end of sale date, and end of support date.
+
+        :return: A list of end-of-life (EOL) notices with additional general dates.
+        """
+        list_of_eols = []
+        general_dates = ["SeriesReleaseDate", "EndOfSaleDate", "EndOfSupportDate"]
+        for alerts in self._product_alerts_content:
+            eols = alerts.get("EOLS", [])
+
+            extra_dates = {date: alerts.get(date, "") for date in general_dates}
+            for eol in eols:
+                eol["dates"].insert(0, extra_dates)
+                list_of_eols.append(eol)
+        return list_of_eols
+
+    def get_list_of_fns(self) -> List[Dict[str, str]]:
+        """
+        Retrieve the list of field notices (FNS) that have been extracted and set.
+
+        :return: A list of field notices (FNS).
+        """
+        return self._list_of_fns
+
+    def get_list_of_eols(self) -> List[Dict[str, str]]:
+        """
+        Retrieve the list of end-of-life (EOL) notices that have been extracted and set.
+
+        :return: A list of end-of-life (EOL) notices.
+        """
+        return self._list_of_eols
+
+    def get_list_of_software_types(self) -> List[str]:
+        """
+        Extract and return a list of unique software types from the affected products
+        in the field notices (FNS). The software types are extracted from the
+        "affectedOsType" or "affectedSoftwareProduct" fields.
+
+        :return: A list of unique software types from the affected products.
+        """
+        software_types = []
+        for alerts in self._list_of_fns:
+            for affected in alerts.get("productsAffected", []):
+                software_type = affected.get("affectedOsType", "") or affected.get(
+                    "affectedSoftwareProduct", ""
+                )
+                if software_type and software_type not in software_types:
+                    software_types.append(software_type)
+        return software_types
+
+    def _refresh_data(self):
+        """
+        Refresh the data by re-extracting product alerts and resetting the list of
+        field notices (FNS) and end-of-life notices (EOLS).
+        """
+        self._product_alerts_content = self._extract_products_archive()
+        self._list_of_fns = self._set_list_of_fns()
+        self._list_of_eols = self._set_list_of_eols()
+
+    def _background_refresh(self):
+        """
+        Background task that refreshes the product alert data at a fixed interval.
+        """
+        while True:
+            self._refresh_data()
+            logger.info(
+                f"Product alert data refreshed. "
+                f"Next refresh in {GetEOLConfig.DATA_REFRESH_INTERVAL} seconds."
+            )
+            time.sleep(self.refresh_interval)
+
+    def _start_background_refresh(self):
+        """
+        Start the background refresh task that periodically refreshes the product alerts.
+        """
+        refresh_thread = threading.Thread(target=self._background_refresh, daemon=True)
+        refresh_thread.start()
