@@ -18,7 +18,8 @@ from bs4 import BeautifulSoup
 
 from app.config import GetEOLConfig, logging
 from app.jobs.get_cisco_products import scrape_cisco_products
-from app.utils import normalize_date_format, normalize_to_camel_case, save_to_json
+from app.utils import (normalize_date_format, normalize_to_camel_case,
+                       save_to_json)
 
 
 class CiscoEOLJob:
