@@ -17,6 +17,8 @@ from fastapi import Depends, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse
 
+from app.config import GetEOLConfig
+
 logger = logging.getLogger("Utils")
 
 
@@ -90,6 +92,41 @@ def normalize_date_format(date_str: str, date_format: str = "%d-%b-%Y") -> str:
 
 
 def paginate(func: Callable[..., Union[List[Dict[str, Any]], Dict[str, Any]]]):
+    """
+    Decorator to paginate the results of a function.
+
+    This decorator is used to wrap an endpoint function and provide automatic pagination
+    for its list-based response. It expects the wrapped function to return a list, and
+    will paginate the results according to the 'limit' and 'offset' parameters provided
+    via the PaginationParams dependency.
+
+    The wrapped function can be a coroutine (async function) or a regular function.
+
+    Args:
+        func (Callable[..., Union[List[Dict[str, Any]], Dict[str, Any]]]):
+            The function to be wrapped. It should return a list of results that will be paginated.
+
+    Returns:
+        Callable: The wrapped function with pagination applied.
+
+    Paginated Response Structure:
+        - has_more: Indicates if there are more pages of results beyond the current page.
+        - total_pages: The total number of pages based on the limit.
+        - current_page: The current page being served.
+        - total_items: The total number of items in the result set.
+        - data: The paginated data (subset of the original list).
+
+    Raises:
+        HTTPException:
+            - If the results are not a list, it raises a 500 HTTP error.
+            - If there is an issue generating the JSON response, it raises a 500 HTTP error.
+
+    Example:
+        >>> @paginate
+        >>> async def get_items():
+        >>>     return [{"name": "item1"}, {"name": "item2"}]
+    """
+
     @wraps(func)
     async def async_wrapper(*args, pagination: PaginationParams = Depends(), **kwargs):
         limit = pagination.limit
@@ -169,6 +206,34 @@ class TarExtractor:
             logger.error(f"Error extracting file {file_name}: {ex}")
             return ""
 
+    def iterate_tar_file(self, target_file_name: str = "eol.json") -> List[dict]:
+        """
+        Iterate over the tar file and return the content of target files (e.g., 'eol.json').
+        :param target_file_name: The name of the file to search for within the tar archive.
+        :return: A list of file contents (assumed to be JSON) as dictionaries.
+        """
+        self.load_tar_file()
+        file_contents = []
+
+        # Iterate through each member in the tar archive
+        for member in self.tar_file.getmembers():
+            # Check if the member is a regular file and ends with 'eol.json'
+            if member.isfile() and member.name.endswith(target_file_name):
+                # logger.info(f"Found file: {member.name}")
+                file_obj = self.tar_file.extractfile(member)
+                if file_obj:
+                    try:
+                        # Assuming the file content is in JSON format, decode and parse it
+                        content = file_obj.read().decode("utf-8")
+                        json_content = json.loads(content)
+                        file_contents.append(json_content)
+                    except json.JSONDecodeError as ex:
+                        logger.error(f"Error decoding JSON file {member.name}: {ex}")
+                    except Exception as ex:
+                        logger.error(f"Error reading file {member.name}: {ex}")
+
+        return file_contents
+
 
 class FeatureExtractor(TarExtractor):
     @lru_cache(maxsize=128)
@@ -203,12 +268,27 @@ class FeatureExtractor(TarExtractor):
 
 class ProductAlertsExtractor(TarExtractor):
     @lru_cache(maxsize=128)
-    def extract_products_eol(self, pid: str) -> List[Any]:
+    def extract_products_eol(self) -> Union[list[Any], str]:
         """
         Extract products alerts from the tar file.
         :param pid: Device Product ID
         :return: List of features.
         """
-        products = self.extract_raw_file(file_name)
+        file_contents = self.iterate_tar_file(target_file_name="eol.json")
 
-        return []
+        product_alerts = []
+        for content in file_contents:
+            # Check if the content is a string, then decode as JSON
+            if isinstance(content, str):
+                try:
+                    alerts = json.loads(content)  # Decode JSON if it's a string
+                    product_alerts.extend(alerts)
+                except json.JSONDecodeError as ex:
+                    logger.error(f"Error decoding JSON content: {ex}")
+            elif isinstance(content, dict):
+                # If content is already a dict, append it directly
+                product_alerts.append(content)
+            else:
+                logger.error(f"Unexpected content type: {type(content)}")
+
+        return product_alerts

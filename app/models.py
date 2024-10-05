@@ -5,10 +5,10 @@ from pydantic import BaseModel
 
 
 class ProductAlerts(BaseModel):
-    product_name: str
-    product_id: str
-    software_type: str
-    software_version: str
+    product_name: Optional[str] = None
+    product_id: Optional[str] = None
+    software_type: Optional[str] = None
+    software_version: Optional[str] = None
 
 
 class PlatformTypes(str, Enum):
