@@ -205,7 +205,8 @@ class GetFeaturesJob:
                 self.logger.info("Job completed successfully")
         except Exception as e:
             self.logger.error(
-                "Job failed to fetch platforms, releases, and features. Error: %s", e
+                "Job failed to fetch platforms, releases, and features. Error: %s",
+                e,
             )
 
     async def _fetch_platforms_data(self) -> Dict[str, Any]:

@@ -268,7 +268,9 @@ from typing import Dict, List, Union
 
 class ProductAlertsExtractor(TarExtractor):
     def __init__(
-        self, tar_path: str, refresh_interval: int = GetEOLConfig.DATA_REFRESH_INTERVAL
+        self,
+        tar_path: str,
+        refresh_interval: int = GetEOLConfig.DATA_REFRESH_INTERVAL,
     ) -> None:
         """
         Initialize the ProductAlertsExtractor by extracting product alerts and setting
@@ -336,7 +338,11 @@ class ProductAlertsExtractor(TarExtractor):
         :return: A list of end-of-life (EOL) notices with additional general dates.
         """
         list_of_eols = []
-        general_dates = ["SeriesReleaseDate", "EndOfSaleDate", "EndOfSupportDate"]
+        general_dates = [
+            "SeriesReleaseDate",
+            "EndOfSaleDate",
+            "EndOfSupportDate",
+        ]
         for alerts in self._product_alerts_content:
             eols = alerts.get("EOLS", [])
 

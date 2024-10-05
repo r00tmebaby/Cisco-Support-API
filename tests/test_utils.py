@@ -2,8 +2,11 @@ import os
 import unittest
 from unittest.mock import mock_open, patch
 
-from app.utils import (normalize_date_format, normalize_to_camel_case,
-                       save_to_json)
+from app.utils import (
+    normalize_date_format,
+    normalize_to_camel_case,
+    save_to_json,
+)
 
 
 class TestUtilsFunctions(unittest.TestCase):

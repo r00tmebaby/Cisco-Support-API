@@ -18,8 +18,11 @@ from bs4 import BeautifulSoup
 
 from app.config import GetEOLConfig, logging
 from app.jobs.get_cisco_products import scrape_cisco_products
-from app.utils import (normalize_date_format, normalize_to_camel_case,
-                       save_to_json)
+from app.utils import (
+    normalize_date_format,
+    normalize_to_camel_case,
+    save_to_json,
+)
 
 
 class CiscoEOLJob:
@@ -432,7 +435,11 @@ class CiscoEOLJob:
 
     @classmethod
     async def support_page_parser(
-        cls, page: str, client: httpx.AsyncClient, path: str, semaphore: Semaphore
+        cls,
+        page: str,
+        client: httpx.AsyncClient,
+        path: str,
+        semaphore: Semaphore,
     ):
         """
         Parse the support page to extract both EOL (End of Life) and FN (Field Notice) data and save it to JSON files.
@@ -575,7 +582,8 @@ class CiscoEOLJob:
             tar_filename, "w:gz", compresslevel=self.config.COMPRESSION_LEVEL
         ) as tar:
             tar.add(
-                self.config.EOL_FOLDER, arcname=os.path.basename(self.config.EOL_FOLDER)
+                self.config.EOL_FOLDER,
+                arcname=os.path.basename(self.config.EOL_FOLDER),
             )
 
         self.logger.info(f"Data archived to {tar_filename}")
