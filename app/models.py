@@ -1,8 +1,7 @@
-from dataclasses import field
 from enum import Enum
-from typing import List, Optional, Union
+from typing import Optional
 
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 
 
 class ProductAlerts(BaseModel):

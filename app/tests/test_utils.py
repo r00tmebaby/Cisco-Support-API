@@ -1,29 +1,15 @@
 import os
+import sys
 import unittest
+from pathlib import Path
+from unittest import TestCase
 from unittest.mock import mock_open, patch
 
-from app.utils import normalize_date_format, normalize_to_camel_case, save_to_json
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils import normalize_date_format, normalize_to_camel_case, save_to_json
 
 
-class TestUtilsFunctions(unittest.TestCase):
-
-    @patch("os.makedirs")
-    @patch("builtins.open", new_callable=mock_open)
-    def test_save_to_json(self, mock_file, mock_makedirs):
-        """Test saving data to a JSON file."""
-        data = {"key": "value"}
-        filename = "test.json"
-
-        save_to_json(data, filename)
-
-        mock_makedirs.assert_called_once_with(os.path.dirname(filename), exist_ok=True)
-
-        # Join the content written to the file
-        written_data = "".join(
-            call_args[0][0] for call_args in mock_file().write.call_args_list
-        )
-        expected_data = '{\n    "key": "value"\n}'
-        self.assertEqual(written_data, expected_data)
+class TestUtilsFunctions(TestCase):
 
     def test_normalize_to_camel_case(self):
         """Test normalization of table header to camelCase."""

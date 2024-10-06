@@ -8,10 +8,9 @@ from typing import Any, Dict, List
 
 import aiofiles
 import httpx
-
-from app.config import GetFeaturesConfig, logging
-from app.models import FeaturesRequestModel
-from app.utils import save_to_json
+from config import GetFeaturesConfig, logging
+from models import FeaturesRequestModel
+from utils import save_to_json
 
 
 class GetFeaturesJob:

@@ -1,7 +1,5 @@
 import inspect
-import json
 import logging
-import os
 import re
 import tarfile
 from datetime import datetime
@@ -10,12 +8,10 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Union
 
 import aiofiles
-from config import GetFeaturesConfig
+from config import GetEOLConfig, GetFeaturesConfig
 from fastapi import Depends, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse
-
-from app.config import GetEOLConfig
 
 logger = logging.getLogger("Utils")
 

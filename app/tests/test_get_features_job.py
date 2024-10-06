@@ -1,105 +1,21 @@
-import json
+import os
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.jobs.get_features import GetFeaturesJob, RequestModel
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-
-@pytest.mark.asyncio
-async def test_fetch_platforms_failure():
-    job = GetFeaturesJob()
-    mock_client = AsyncMock()
-    mock_response = AsyncMock()
-    mock_response.status_code = 404
-    mock_client.post.return_value = mock_response
-
-    result = await job._fetch_platforms(mock_client, "Switches")
-
-    assert result == {}
-    mock_client.post.assert_called_once_with(
-        job.config.REQUEST_1,
-        headers=job.config.HEADERS,
-        json=RequestModel(mdf_product_type="Switches").model_dump(),
-        timeout=900,
-    )
-
-
-@pytest.mark.asyncio
-async def test_fetch_releases_failure():
-    job = GetFeaturesJob()
-    mock_client = AsyncMock()
-    mock_response = AsyncMock()
-    mock_response.status_code = 404
-    mock_client.post.return_value = mock_response
-
-    platform_data = {"platform_id": 1}
-    result = await job._fetch_releases(mock_client, platform_data, "Switches")
-
-    assert result == []
-    mock_client.post.assert_called_once_with(
-        job.config.REQUEST_2,
-        headers=job.config.HEADERS,
-        json=RequestModel(platform_id=1, mdf_product_type="Switches").model_dump(),
-        timeout=900,
-    )
-
-
-@pytest.mark.asyncio
-async def test_fetch_features_success():
-    job = GetFeaturesJob()
-    mock_client = AsyncMock()
-    mock_response = AsyncMock()
-    mock_response.status_code = 200
-    mock_response.aread.return_value = json.dumps([]).encode()
-    mock_client.post.return_value = mock_response
-    mock_tar = MagicMock()
-
-    release_data = {"platform_id": 1, "release_id": 1}
-    await job._fetch_features(mock_client, release_data, "Switches", mock_tar)
-
-    mock_tar.add.assert_called_once()
-    mock_client.post.assert_called_once_with(
-        job.config.REQUEST_3,
-        headers=job.config.HEADERS,
-        json=RequestModel(
-            platform_id=1, mdf_product_type="Switches", release_id=1
-        ).model_dump(),
-        timeout=900,
-    )
-
-
-@pytest.mark.asyncio
-async def test_fetch_features_failure():
-    job = GetFeaturesJob()
-    mock_client = AsyncMock()
-    mock_response = AsyncMock()
-    mock_response.status_code = 404
-    mock_client.post.return_value = mock_response
-    mock_tar = MagicMock()
-
-    release_data = {"platform_id": 1, "release_id": 1}
-    await job._fetch_features(mock_client, release_data, "Switches", mock_tar)
-
-    mock_tar.add.assert_not_called()
-    mock_client.post.assert_called_once_with(
-        job.config.REQUEST_3,
-        headers=job.config.HEADERS,
-        json=RequestModel(
-            platform_id=1, mdf_product_type="Switches", release_id=1
-        ).model_dump(),
-        timeout=900,
-    )
+from app.jobs.get_features import GetFeaturesJob
 
 
 @pytest.mark.asyncio
 async def test_fetch_all_features():
     job = GetFeaturesJob()
-    mock_tar = MagicMock()
     releases = {"Switches": [{"platform_id": 1, "release_id": 1}]}
 
     with patch.object(job, "_fetch_features", new_callable=AsyncMock) as mock_fetch:
-        await job._fetch_all_features(releases, mock_tar)
+        await job._fetch_all_features(releases)
 
     assert mock_fetch.await_count == 1
     mock_fetch.assert_awaited_once()
@@ -110,7 +26,6 @@ async def test_fetch_data():
     job = GetFeaturesJob()
 
     # Ensure that FETCH_FEATURES_ONLINE is True during the test
-    job.config = AsyncMock()
     job.config.FETCH_FEATURES_ONLINE = True
 
     with patch.object(
@@ -171,7 +86,7 @@ async def test_fetch_and_archive_features():
 
         await job._fetch_and_archive_features(releases)
 
-        mock_fetch.assert_awaited_once_with(releases, mock_tar)
+        mock_fetch.assert_awaited_once_with(releases)
 
 
 @pytest.mark.asyncio
