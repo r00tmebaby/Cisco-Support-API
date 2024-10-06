@@ -1,0 +1,950 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Cisco Device Insights API",
+    "description": "\n    This API provides easy access to Cisco device insights, such as:\n\n    - End-of-Life (EOL) dates\n    - Common Vulnerabilities and Exposures (CVEs)\n    - Features and best practices\n\n    The API automates the data collection from Cisco's publicly available site, helping users manage \n    Cisco devices without the need for formal onboarding or contracts.\n    ",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/feature/platforms": {
+      "get": {
+        "tags": [
+          "Features"
+        ],
+        "summary": "Get platforms",
+        "description": "Retrieve a list of platforms",
+        "operationId": "features_platforms_feature_platforms_get",
+        "parameters": [
+          {
+            "name": "by_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "By Name"
+            }
+          },
+          {
+            "name": "platform_choice",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/PlatformTypes"
+                }
+              ],
+              "default": "Switches",
+              "title": "Platform Choice"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The page number for pagination",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "The page number for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Limit the number of results per page",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Limit the number of results per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feature/releases": {
+      "get": {
+        "tags": [
+          "Features"
+        ],
+        "summary": "Get releases",
+        "description": "Retrieve a list of releases",
+        "operationId": "get_releases_feature_releases_get",
+        "parameters": [
+          {
+            "name": "platform_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ID of the platform",
+              "title": "Platform Id"
+            },
+            "description": "ID of the platform"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The page number for pagination",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "The page number for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Limit the number of results per page",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Limit the number of results per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feature/features": {
+      "get": {
+        "tags": [
+          "Features"
+        ],
+        "summary": "Get features",
+        "description": "Retrieve features for a specific platform and release",
+        "operationId": "get_features_feature_features_get",
+        "parameters": [
+          {
+            "name": "platform_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Platform Id"
+            }
+          },
+          {
+            "name": "release_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Release Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The page number for pagination",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "The page number for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Limit the number of results per page",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Limit the number of results per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/productAlerts/hardwareFieldNotices": {
+      "get": {
+        "tags": [
+          "Product Alerts"
+        ],
+        "summary": "Get field notices",
+        "description": "Retrieve field notices",
+        "operationId": "field_notices_by_hardware_productAlerts_hardwareFieldNotices_get",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by product id",
+              "title": "Product Id"
+            },
+            "description": "Filter by product id"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The page number for pagination",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "The page number for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Limit the number of results per page",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Limit the number of results per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  ],
+                  "title": "Response Field Notices By Hardware Productalerts Hardwarefieldnotices Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/productAlerts/softwareFieldNotices": {
+      "get": {
+        "tags": [
+          "Product Alerts"
+        ],
+        "summary": "Get field notices",
+        "description": "Retrieve field notices",
+        "operationId": "field_notices_by_software_productAlerts_softwareFieldNotices_get",
+        "parameters": [
+          {
+            "name": "software_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Filter by software type",
+              "enum": [
+                "NON-IOS",
+                "IOS XE Software",
+                "Cisco Mobility Express",
+                "Wireless LAN Controller Software",
+                "IOS Software",
+                "IOS XE ROMMON Software",
+                "IOS",
+                "SD-WAN Software Update",
+                "IOS XE SD-WAN Software",
+                "Firepower Management Center Software",
+                "Adaptive Security Appliance (ASA) Software",
+                "Firepower Threat Defense (FTD) Software",
+                "Identity Services Engine System Software",
+                "AsyncOS for Content Security Management Appliance (SMA)",
+                "AsyncOS for ESA",
+                "NX-OS System Software",
+                "APIC Software",
+                "Base Software",
+                "Application Patches",
+                "Cisco Emergency Responder",
+                "Cisco Expressway",
+                "Cisco Jabber Software for Android",
+                "Unified Communications Manager",
+                "Unified Presence Server",
+                "Cisco WebEx App / Client for Android",
+                "Jabber Software",
+                "Unity Connection Updates",
+                "Webex App, formerly Webex Teams",
+                "Unified Communications Manager IM & Presence Service"
+              ],
+              "title": "Software Type"
+            },
+            "description": "Filter by software type"
+          },
+          {
+            "name": "software_version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Filter by software version",
+              "title": "Software Version"
+            },
+            "description": "Filter by software version"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The page number for pagination",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "The page number for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Limit the number of results per page",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Limit the number of results per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  },
+                  "title": "Response Field Notices By Software Productalerts Softwarefieldnotices Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/productAlerts/allEndOfLifeDates": {
+      "get": {
+        "tags": [
+          "Product Alerts"
+        ],
+        "summary": "Get all end Of Life Dates",
+        "description": "Retrieve End of Life Dates",
+        "operationId": "end_of_life_all_productAlerts_allEndOfLifeDates_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The page number for pagination",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "The page number for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Limit the number of results per page",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Limit the number of results per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  },
+                  "title": "Response End Of Life All Productalerts Allendoflifedates Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/productAlerts/hardwareEndOfLife": {
+      "get": {
+        "tags": [
+          "Product Alerts"
+        ],
+        "summary": "Get end of life dates by product id",
+        "description": "Retrieve End of Life Dates",
+        "operationId": "end_of_life_by_hardware_productAlerts_hardwareEndOfLife_get",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Filter by product id",
+              "title": "Product Id"
+            },
+            "description": "Filter by product id"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The page number for pagination",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "The page number for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Limit the number of results per page",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Limit the number of results per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  },
+                  "title": "Response End Of Life By Hardware Productalerts Hardwareendoflife Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/productAlerts/softwareEndOfLife": {
+      "get": {
+        "tags": [
+          "Product Alerts"
+        ],
+        "summary": "Get software-related EOLs",
+        "description": "Retrieve software-related EOLs",
+        "operationId": "end_of_life_by_software_productAlerts_softwareEndOfLife_get",
+        "parameters": [
+          {
+            "name": "software_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Filter by software type",
+              "enum": [
+                "IOS XE",
+                "IOS"
+              ],
+              "title": "Software Type"
+            },
+            "description": "Filter by software type"
+          },
+          {
+            "name": "software_version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Filter by software version",
+              "title": "Software Version"
+            },
+            "description": "Filter by software version"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The page number for pagination",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "The page number for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Limit the number of results per page",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Limit the number of results per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  },
+                  "title": "Response End Of Life By Software Productalerts Softwareendoflife Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/configBestPractices/summary": {
+      "get": {
+        "tags": [
+          "Config Best Practices"
+        ],
+        "summary": "Get Best Practices",
+        "description": "Retrieve a list of best practices",
+        "operationId": "best_practice_configBestPractices_summary_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The page number for pagination",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "The page number for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Limit the number of results per page",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Limit the number of results per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/configBestPractices/rules": {
+      "get": {
+        "tags": [
+          "Config Best Practices"
+        ],
+        "summary": "Get Best Practices",
+        "description": "Retrieve a list of best practices",
+        "operationId": "best_practice_configBestPractices_rules_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The page number for pagination",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "The page number for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Limit the number of results per page",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Limit the number of results per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/configBestPractices/details": {
+      "get": {
+        "tags": [
+          "Config Best Practices"
+        ],
+        "summary": "Get Best Practices",
+        "description": "Retrieve a list of best practices",
+        "operationId": "best_practice_configBestPractices_details_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The page number for pagination",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "The page number for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Limit the number of results per page",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Limit the number of results per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "PlatformTypes": {
+        "type": "string",
+        "enum": [
+          "Switches",
+          "Routers",
+          "Wireless",
+          "IOT Routers",
+          "IOT Switches"
+        ],
+        "title": "PlatformTypes",
+        "description": "Enum representing different types of platforms."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

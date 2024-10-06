@@ -32,21 +32,30 @@ The tools themselves don't violate Cisco’s policies, but how you use them migh
 
 #### Note: This repository does not contain any scraped Cisco data — only tools that can gather it... :)
 
-### Job Descriptions
+### API documentation
+You can view the full API specification [here](resources/openapi.json).
+
+![API](resources/api.png)
+![End-Of-Life](resources/end_of_life.png)
+![Features](resources/features.png)
+![Field-Notices](resources/field_notices.png)
+
+
+### Microservices Descriptions
 
 1. **CiscoEOLJob**:
 
-   - ![Activity Diagram](images/CiscoEOLJob_Activity_Diagram.png)
+   - ![Activity Diagram](resources/CiscoEOLJob_Activity_Diagram.png)
    - **What It Does**: CiscoEOLJob is responsible for scraping and processing Cisco's End-of-Life (EOL), End-of-Sale (EOS), and Field Notices (FN) data.
    - **How It Works**: It uses asynchronous HTTP requests to retrieve HTML pages from Cisco's website. It then parses these pages using BeautifulSoup to extract relevant information like product part numbers, milestone dates, and field notice details. The extracted data is saved to JSON files.
     
 2. **GetCiscoProductsJob**:
-   - ![Activity Diagram](images/GetCiscoProductsJob_Activity_Diagram.png)
+   - ![Activity Diagram](resources/GetCiscoProductsJob_Activity_Diagram.png)
    - **What It Does**: GetCiscoProductsJob is used to scrape product links from Cisco's support website and extract details about supported Cisco products.
    - **How It Works**: It uses an asynchronous HTTP client (`httpx`) to make requests to Cisco's product pages. The job parses the pages to extract product links, and then extracts supported products from each product page. The extracted data is saved to a JSON file.
 
 3. **GetFeaturesJob**:
-   - ![Activity Diagram](images/GetFeaturesJob_Activity_Diagram.png)
+    ![Activity Diagram](resources/GetFeaturesJob_Activity_Diagram.png)
    - **What It Does**: GetFeaturesJob is responsible for fetching data related to Cisco platforms, software releases, and features. It collects information on supported features for different Cisco hardware platforms and software releases.
    - **How It Works**: This job first fetches platform data, then collects release information for each platform. Finally, it fetches features for each release. The data is fetched through Cisco APIs, and unique feature hashes are generated to track feature details. The collected data is saved to JSON files and archived as a `.tar.gz` file.
 
