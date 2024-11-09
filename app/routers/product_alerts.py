@@ -170,9 +170,12 @@ def end_of_life_by_hardware(
     seen_notice_ids = set()
     for eol in all_eols:
         bulletin_id = eol.get("url")
+        # Check if product_id partially matches any entry in affectedProducts
         if (
-            product_id in eol.get("affectedProducts", [])
-            and bulletin_id not in seen_notice_ids
+                any(
+                product_id
+                in product for product in eol.get("affectedProducts", []))
+                and bulletin_id not in seen_notice_ids
         ):
             filtered_eols.append(eol)
             seen_notice_ids.add(bulletin_id)
